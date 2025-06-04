@@ -176,17 +176,53 @@ def expand_event_for_day(
     sod_next = sod + timedelta(days=1)
 
     if isinstance(start_raw, date) and not isinstance(start_raw, datetime):
-        # use helper to avoid KeyError if no DTEND
-        dtend_raw = _get_raw_end(comp)
+        # 1) Figure out the “end” date for the single-day span
+        dtend_raw  = _get_raw_end(comp)
         dtend_date = dtend_raw if isinstance(dtend_raw, date) else dtend_raw.date()
+
+        raw_rr = comp.get('RRULE')
+        if raw_rr:
+            # (1) Convert UNTIL from pure date → datetime if needed
+            rrule_dict = comp.decoded('RRULE')
+            until_list = rrule_dict.get('UNTIL')
+            if isinstance(until_list, list) and len(until_list) == 1:
+                only = until_list[0]
+                if isinstance(only, date) and not isinstance(only, datetime):
+                    rrule_dict['UNTIL'] = [
+                        datetime.combine(only, time.min, tzinfo=pytz.UTC)
+                    ]
+
+            # (2) Build a vRecur + rrulestr, forcing dtstart to be local midnight
+            new_rrule = vRecur(rrule_dict)
+            rule_text = new_rrule.to_ical().decode()
+            dtstart_for_rrule = datetime.combine(start_raw, time.min).replace(tzinfo=tz_local)
+            rule = rrulestr(rule_text, dtstart=dtstart_for_rrule)
+
+            # (3) Convert our “start of day” and “end of day” to UTC
+            lower = sod.astimezone(pytz.UTC)
+            upper = sod_next.astimezone(pytz.UTC)
+
+            instances = []
+            for occ in rule.between(lower, upper, inc=True):
+                # Skip any occurrence exactly at the “upper” bound (next day’s midnight)
+                if isinstance(occ, datetime) and occ == upper:
+                    continue
+                if occ.tzinfo is None:
+                    occ = occ.replace(tzinfo=pytz.UTC)
+                # Convert to local‐midnight
+                st = occ.astimezone(tz_local).replace(hour=0, minute=0, second=0, microsecond=0)
+                en = st + timedelta(days=1)
+                meta = {'uid': uid, 'calendar_color': color, 'all_day': True}
+                instances.append((st, en, str(comp.get('SUMMARY','')), meta))
+            return instances
+
+        # (4) No RRULE on this date-only VEVENT → single-day all-day check
         if start_raw <= target_date < dtend_date:
             st = sod
             en = sod_next
             meta = {'uid': uid, 'calendar_color': color, 'all_day': True}
             return [(st, en, str(comp.get('SUMMARY','')), meta)]
-        # this date-only VEVENT does not include today
         return []
-    
 
     # Recurring
     raw_rr = comp.get('RRULE')
