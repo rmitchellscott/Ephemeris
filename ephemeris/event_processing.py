@@ -280,7 +280,7 @@ def split_all_day_events(events: list[tuple], target_date: date, tz_local) -> tu
 
 
 def filter_events_for_day(events: list[tuple], target_date: date) -> list[tuple]:
-    cancel_variants = ('cancelled','canceled')
+    filter_list = settings.FILTER_BLOCKED_WORDS
     kept = []
     for st, en, title, meta in events:
         local_start = st
@@ -295,8 +295,8 @@ def filter_events_for_day(events: list[tuple], target_date: date) -> list[tuple]
                 continue
         tl = title.lower()
         status = meta.get('status','').lower()
-        if any(v in tl for v in cancel_variants) or status in cancel_variants:
-            logger.opt(colors=True).log("EVENTS","<yellow>Dropped (cancelled):</yellow> '{}'.",title)
+        if any(v in tl for v in filter_list) or status in filter_list:
+            logger.opt(colors=True).log("EVENTS","<yellow>Dropped (filter list):</yellow> '{}'.",title)
             continue
         duration = (en - st).total_seconds() / 60
         if duration < 15:

@@ -115,6 +115,8 @@ PDF_DPI = float(os.getenv("DOC_PAGE_DPI", "226"))
 FOOTER = os.getenv("DOC_FOOTER_TEXT", "E P H E M E R I S")
 
 # Behavior
+_raw_blocked_words = os.getenv("APP_FILTER_LIST", "cancelled,canceled")
+FILTER_BLOCKED_WORDS = tuple(w.strip().lower() for w in _raw_blocked_words.split(","))
 FORCE_REFRESH = os.getenv("APP_FORCE_REFRESH", "false").lower() in ("1", "true", "yes")
 
 # Cover
