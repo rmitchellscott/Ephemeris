@@ -225,6 +225,7 @@ def expand_event_for_day(
         return []
 
     # Recurring
+    title = str(comp.get('SUMMARY', '<no title>'))
     raw_rr = comp.get('RRULE')
     if raw_rr:
         rrule_dict = comp.decoded('RRULE')
@@ -232,10 +233,19 @@ def expand_event_for_day(
         until_list = rrule_dict.get('UNTIL')
         if isinstance(until_list, list) and len(until_list) == 1:
             only = until_list[0]
+            # (a) date-only → midnight UTC
             if isinstance(only, date) and not isinstance(only, datetime):
+                logger.log("EVENTS","Event '{}' has date-only UNTIL, converting to UTC midnight.", title)
                 rrule_dict['UNTIL'] = [
                     datetime.combine(only, time.min, tzinfo=pytz.UTC)
                 ]
+            # (b) naive datetime → interpret as local, convert to UTC
+            elif isinstance(only, datetime) and only.tzinfo is None:
+                tz_name = getattr(tz_local, "zone", None) or getattr(tz_local, "key", None) or str(tz_local)
+                logger.log("EVENTS","Event '{}' has UNTIL without timezone, interpreting as local timezone.", title)
+                local_dt = only.replace(tzinfo=tz_local)
+                until_utc = local_dt.astimezone(pytz.UTC)
+                rrule_dict['UNTIL'] = [until_utc]
 
         new_rrule = vRecur(rrule_dict)
         rule_text = new_rrule.to_ical().decode()
