@@ -2,6 +2,7 @@ from datetime import datetime, date, time
 from tempfile import NamedTemporaryFile
 
 import requests
+import os
 from icalendar import Calendar as iCal
 from dateutil import tz as dateutil_tz
 from loguru import logger
@@ -88,6 +89,17 @@ def load_raw_events(sources: list[dict]) -> list[tuple]:
         name = entry.get("name")
         color = entry.get("color", "black")
         source = entry.get("source")
+        if os.path.isdir(source):
+            logger.debug("Source {} is a directory; scanning for .ics files...", source)
+            for filename in os.listdir(source):
+                if not filename.lower().endswith(".ics"):
+                    continue
+                file_path = os.path.join(source, filename)
+                logger.debug("  Found ICS file: {}", file_path)
+                raw = download_calendar(file_path)
+                cal = parse_calendar(raw)
+                all_events.extend(extract_raw_events(cal, color, name))
+            continue
         logger.debug("Fetching calender {} from {}...", name, source)
         raw = download_calendar(source)
         cal = parse_calendar(raw)
