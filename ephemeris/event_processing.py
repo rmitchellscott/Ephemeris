@@ -3,6 +3,7 @@ from collections import defaultdict, deque
 import pytz
 from dateutil.rrule import rrulestr
 from loguru import logger
+from icalendar import vRecur
 
 import ephemeris.settings as settings
 from ephemeris.utils import fmt_time
@@ -190,7 +191,23 @@ def expand_event_for_day(
     # Recurring
     raw_rr = comp.get('RRULE')
     if raw_rr:
-        rule = rrulestr(raw_rr.to_ical().decode(), dtstart=start_raw)
+        rrule_dict = comp.decoded('RRULE')
+
+        until_list = rrule_dict.get('UNTIL')
+        if isinstance(until_list, list) and len(until_list) == 1:
+            only = until_list[0]
+            if isinstance(only, date) and not isinstance(only, datetime):
+                rrule_dict['UNTIL'] = [
+                    datetime.combine(only, time.min, tzinfo=pytz.UTC)
+                ]
+
+        new_rrule = vRecur(rrule_dict)
+        rule_text = new_rrule.to_ical().decode()
+
+        rule = rrulestr(
+            rule_text,
+            dtstart=start_raw if isinstance(start_raw, datetime) else None
+        )
         end_raw = _get_raw_end(comp)
         end0 = normalize(end_raw, 'dtend')
 
