@@ -181,6 +181,7 @@ DOC_ANTIALIAS=false
 | APP_OUTPUT_PDF_PATH | output/ephemeris.pdf     | reports/schedule.pdf   | Path and name for rendered output file.                             |
 | APP_OUTPUT_PNG_DIR  | output/png               | reports/images         | Directory for rendered output PNG files, one per day.               |
 | APP_FORCE_REFRESH   | false                    | true, false            | Skip the changed events check and always render a document for each run. |
+| APP_FILTER_LIST     | cancelled,canceled       | canceled,removed       | Comma-separated list of substrings which, if found in an event’s title or status, will drop that event. |
 | APP_LOG_LEVEL       | INFO                     | VISUAL, EVENTS, DEBUG, INFO, WARNING   | Minimum log level to output to console. EVENTS is useful for troubleshooting why events are appearing or not. VISUAL shows detailed drawing information for developer debugging.                         |
 | APP_LOG_COLORIZE    | true                     | true, false            | Whether to use ANSI colors in console log output.                   |
 | APP_LOG_FORMAT      | (see description)        | custom format string   | Loguru format string for console output. Default includes timestamp, level, and message. |
