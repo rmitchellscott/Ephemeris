@@ -46,13 +46,20 @@ These screenshots broadly show the layout options that are possible. See [Custom
 The program uses a YAML configuration file to set up the calendars:
 ```yaml
 calendars:
+  # ics file
   - name: Personal
     source: calendars/personal.ics
+    color: gray8
+
+  # directory containing ics files
+  - name: Work
+    source: calendars/work
     color: gray6
+
+  # web ics file
   - name: US Holidays
     source: https://www.opm.gov/policy-data-oversight/pay-leave/federal-holidays/holidays.ics
     color: gray4
-
 ```
 Supported values for colors are CSS names, hex colors, as well as a series of grays (gray1 through gray14) that correspond to each step of 4-bit grayscale.
 
