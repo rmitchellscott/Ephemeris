@@ -1,0 +1,9 @@
+cairosvg
+icalendar
+loguru
+PyPDF2
+pytz
+pyyaml
+reportlab
+requests
+webcolors
