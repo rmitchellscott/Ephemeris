@@ -5,5 +5,5 @@ PyPDF2==3.0.1
 pytz==2025.2
 PyYAML==6.0.2
 reportlab==4.4.1
-requests==2.32.3
+requests==2.32.4
 webcolors==24.11.1
