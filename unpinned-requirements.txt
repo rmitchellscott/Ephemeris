@@ -1,7 +1,7 @@
 cairosvg
 icalendar
 loguru
-PyPDF2
+pypdf
 pytz
 pyyaml
 reportlab

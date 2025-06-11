@@ -95,7 +95,7 @@ docker run --rm \
 #### Setup
 
 - Python 3.8+
-- Dependencies: `cairosvg`, `icalendar`, `loguru`, `PyPDF2`, `pytz`, `pyyaml`, `reportlab`, `requests`, `webcolors`
+- Dependencies: `cairosvg`, `icalendar`, `loguru`, `pypdf`, `pytz`, `pyyaml`, `reportlab`, `requests`, `webcolors`
 
 Install dependencies with:
 
