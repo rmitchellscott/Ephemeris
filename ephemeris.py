@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 from collections import Counter, defaultdict
 
-from PyPDF2 import PdfMerger
+from pypdf import PdfMerger
 from loguru import logger
 from reportlab.pdfgen import canvas
 

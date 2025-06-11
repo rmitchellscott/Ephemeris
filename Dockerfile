@@ -1,7 +1,7 @@
 FROM python:3.13-alpine
 
 RUN apk add --no-cache \
-      freetype libjpeg-turbo libpng poppler-utils py3-cairosvg py3-pypdf2 
+      freetype libjpeg-turbo libpng poppler-utils py3-cairosvg
 
 WORKDIR /app
 
