@@ -1,5 +1,6 @@
 import sys
 import os
+import subprocess
 from datetime import datetime
 from collections import Counter, defaultdict
 
@@ -157,6 +158,24 @@ def main():
     # 11) Persist metadata
     save_meta({"_last_anchor": anchor, "events_hash": new_hash})
     logger.info("✅ Completed generation for {}", anchor)
+
+    # 12) Run post-hook if configured
+    if settings.POST_HOOK:
+        logger.info("Running post-hook: {}", settings.POST_HOOK)
+        try:
+            result = subprocess.run(settings.POST_HOOK, shell=True, capture_output=True, text=True, timeout=300)
+            if result.returncode == 0:
+                logger.info("Post-hook completed successfully")
+                if result.stdout.strip():
+                    logger.debug("Post-hook stdout: {}", result.stdout.strip())
+            else:
+                logger.error("Post-hook failed with exit code {}", result.returncode)
+                if result.stderr.strip():
+                    logger.error("Post-hook stderr: {}", result.stderr.strip())
+        except subprocess.TimeoutExpired:
+            logger.error("Post-hook timed out after 300 seconds")
+        except Exception as e:
+            logger.error("Failed to execute post-hook: {}", e)
 
 if __name__ == '__main__':
     main()
