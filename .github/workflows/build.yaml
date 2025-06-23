@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    name: Build Image
+    name: Build Plain Image
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -60,11 +60,79 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and Push
+      - name: Build and Push Plain Image
         id: docker_build
         uses: docker/build-push-action@v6
         with:
           context: .
+          file: ./Dockerfile
+          target: ephemeris
+          pull: true
+          push: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') }}
+          platforms: linux/amd64,linux/arm64/v8
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-rmapi:
+    name: Build RMAPI Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ghcr.io/rmitchellscott/ephemeris
+          tags: |
+            # branch-based tags with rmapi suffix (e.g. 'main-rmapi0.0.30')
+            type=ref,event=branch,suffix=-rmapi0.0.30
+
+            # mirror git tag with rmapi suffix (e.g. 'v1.2.3-rmapi0.0.30')
+            type=ref,event=tag,suffix=-rmapi0.0.30
+
+            # semver without the 'v' with rmapi suffix (e.g. '1.2.3-rmapi0.0.30')
+            type=semver,pattern={{version}},suffix=-rmapi0.0.30
+
+            # major.minor with rmapi suffix (e.g. '1.2-rmapi0.0.30')
+            type=semver,pattern={{major}}.{{minor}},suffix=-rmapi0.0.30
+
+            # major only with rmapi suffix (e.g. '1-rmapi0.0.30')
+            type=semver,pattern={{major}},suffix=-rmapi0.0.30
+
+            # latest-rmapi on main
+            type=raw,priority=1000,value=latest-rmapi0.0.30,enable=${{ startsWith(github.ref, 'refs/tags/') }}
+
+            # commit short SHA with rmapi suffix
+            type=sha,suffix=-rmapi0.0.30
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push RMAPI Image
+        id: docker_build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          target: ephemeris-rmapi
           pull: true
           push: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') }}
           platforms: linux/amd64,linux/arm64/v8
