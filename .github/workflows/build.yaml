@@ -1,5 +1,8 @@
 name: build-docker
 
+env:
+  RMAPI_VERSION: 0.0.30
+
 on:
   push:
     branches:
@@ -41,7 +44,7 @@ jobs:
             # major only (e.g. '1')
             type=semver,pattern={{major}}
 
-            # latest on main
+            # latest on tag
             type=raw,priority=1000,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/') }}
 
             # commit short SHA
@@ -68,7 +71,7 @@ jobs:
           file: ./Dockerfile
           target: ephemeris
           pull: true
-          push: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') }}
+          push: ${{ (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')) && !contains(github.ref, 'rmapi') }}
           platforms: linux/amd64,linux/arm64/v8
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -92,26 +95,23 @@ jobs:
           images: |
             ghcr.io/rmitchellscott/ephemeris
           tags: |
-            # branch-based tags with rmapi suffix (e.g. 'main-rmapi0.0.30')
-            type=ref,event=branch,suffix=-rmapi0.0.30
+            # For regular tags (v1.2.3), add rmapi suffix
+            type=ref,event=tag,suffix=-rmapi${{ env.RMAPI_VERSION }},enable=${{ !contains(github.ref, 'rmapi') }}
+            type=semver,pattern={{version}},suffix=-rmapi${{ env.RMAPI_VERSION }},enable=${{ !contains(github.ref, 'rmapi') }}
+            type=semver,pattern={{major}}.{{minor}},suffix=-rmapi${{ env.RMAPI_VERSION }},enable=${{ !contains(github.ref, 'rmapi') }}
+            type=semver,pattern={{major}},suffix=-rmapi${{ env.RMAPI_VERSION }},enable=${{ !contains(github.ref, 'rmapi') }}
 
-            # mirror git tag with rmapi suffix (e.g. 'v1.2.3-rmapi0.0.30')
-            type=ref,event=tag,suffix=-rmapi0.0.30
+            # For rmapi tags (v1.2.3-rmapi0.0.31), use as-is
+            type=ref,event=tag,enable=${{ contains(github.ref, 'rmapi') }}
+            type=semver,pattern={{version}},enable=${{ contains(github.ref, 'rmapi') }}
+            type=semver,pattern={{major}}.{{minor}},enable=${{ contains(github.ref, 'rmapi') }}
+            type=semver,pattern={{major}},enable=${{ contains(github.ref, 'rmapi') }}
 
-            # semver without the 'v' with rmapi suffix (e.g. '1.2.3-rmapi0.0.30')
-            type=semver,pattern={{version}},suffix=-rmapi0.0.30
+            # Branch-based tags (main only)
+            type=ref,event=branch,suffix=-rmapi${{ env.RMAPI_VERSION }}
 
-            # major.minor with rmapi suffix (e.g. '1.2-rmapi0.0.30')
-            type=semver,pattern={{major}}.{{minor}},suffix=-rmapi0.0.30
-
-            # major only with rmapi suffix (e.g. '1-rmapi0.0.30')
-            type=semver,pattern={{major}},suffix=-rmapi0.0.30
-
-            # latest-rmapi on main
-            type=raw,priority=1000,value=latest-rmapi0.0.30,enable=${{ startsWith(github.ref, 'refs/tags/') }}
-
-            # commit short SHA with rmapi suffix
-            type=sha,suffix=-rmapi0.0.30
+            # Commit short SHA with rmapi suffix
+            type=sha,suffix=-rmapi${{ env.RMAPI_VERSION }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -133,6 +133,8 @@ jobs:
           context: .
           file: ./Dockerfile
           target: ephemeris-rmapi
+          build-args: |
+            RMAPI_VERSION=${{ env.RMAPI_VERSION }}
           pull: true
           push: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') }}
           platforms: linux/amd64,linux/arm64/v8

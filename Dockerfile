@@ -8,7 +8,8 @@ RUN apk add --no-cache git
 
 # Rmapi build
 FROM --platform=$BUILDPLATFORM go-base AS rmapi-source
-RUN git clone --branch v0.0.30 https://github.com/ddvk/rmapi .
+ARG RMAPI_VERSION=0.0.30
+RUN git clone --branch v${RMAPI_VERSION} https://github.com/ddvk/rmapi .
 
 FROM --platform=$BUILDPLATFORM go-base AS rmapi-builder
 
