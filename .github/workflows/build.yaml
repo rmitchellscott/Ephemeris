@@ -1,8 +1,7 @@
 name: build-docker
 
 env:
-  RMAPI_VERSION: 0.0.30
-
+  RMAPI_VERSION: v0.0.30-mitchell.1
 on:
   push:
     branches:
@@ -13,11 +12,25 @@ on:
 
 jobs:
   build:
-    name: Build Plain Image
+    name: Build ${{ matrix.variant }} Image
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+    strategy:
+      matrix:
+        variant: [plain, rmapi]
+        include:
+          - variant: plain
+            target: ephemeris
+            build_args: ""
+            skip_condition: ${{ contains(github.ref, 'rmapi') }}
+          - variant: rmapi
+            target: ephemeris-rmapi
+            build_args: |
+              RMAPI_VERSION=${{ env.RMAPI_VERSION }}
+            skip_condition: false
+    if: ${{ !matrix.skip_condition }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,26 +42,30 @@ jobs:
           images: |
             ghcr.io/rmitchellscott/ephemeris
           tags: |
-            # branch-based tags (e.g. 'main')
-            type=ref,event=branch
+            # Plain variant tags
+            type=ref,event=branch,enable=${{ matrix.variant == 'plain' }}
+            type=ref,event=tag,enable=${{ matrix.variant == 'plain' && !contains(github.ref, 'rmapi') }}
+            type=semver,pattern={{version}},enable=${{ matrix.variant == 'plain' && !contains(github.ref, 'rmapi') }}
+            type=semver,pattern={{major}}.{{minor}},enable=${{ matrix.variant == 'plain' && !contains(github.ref, 'rmapi') }}
+            type=semver,pattern={{major}},enable=${{ matrix.variant == 'plain' && !contains(github.ref, 'rmapi') }}
+            type=raw,priority=1000,value=latest,enable=${{ matrix.variant == 'plain' && startsWith(github.ref, 'refs/tags/') && !contains(github.ref, 'rmapi') }}
+            type=sha,enable=${{ matrix.variant == 'plain' }}
 
-            # mirror git tag (e.g. 'v1.2.3')
-            type=ref,event=tag
+            # RMAPI variant tags - for regular tags, add rmapi suffix
+            type=ref,event=tag,suffix=-rmapi${{ env.RMAPI_VERSION }},enable=${{ matrix.variant == 'rmapi' && !contains(github.ref, 'rmapi') }}
+            type=semver,pattern={{version}},suffix=-rmapi${{ env.RMAPI_VERSION }},enable=${{ matrix.variant == 'rmapi' && !contains(github.ref, 'rmapi') }}
+            type=semver,pattern={{major}}.{{minor}},suffix=-rmapi${{ env.RMAPI_VERSION }},enable=${{ matrix.variant == 'rmapi' && !contains(github.ref, 'rmapi') }}
+            type=semver,pattern={{major}},suffix=-rmapi${{ env.RMAPI_VERSION }},enable=${{ matrix.variant == 'rmapi' && !contains(github.ref, 'rmapi') }}
 
-            # semver without the 'v' (e.g. '1.2.3')
-            type=semver,pattern={{version}}
+            # RMAPI variant tags - for rmapi tags, use as-is
+            type=ref,event=tag,enable=${{ matrix.variant == 'rmapi' && contains(github.ref, 'rmapi') }}
+            type=semver,pattern={{version}},enable=${{ matrix.variant == 'rmapi' && contains(github.ref, 'rmapi') }}
+            type=semver,pattern={{major}}.{{minor}},enable=${{ matrix.variant == 'rmapi' && contains(github.ref, 'rmapi') }}
+            type=semver,pattern={{major}},enable=${{ matrix.variant == 'rmapi' && contains(github.ref, 'rmapi') }}
 
-            # major.minor (e.g. '1.2')
-            type=semver,pattern={{major}}.{{minor}}
-
-            # major only (e.g. '1')
-            type=semver,pattern={{major}}
-
-            # latest on tag
-            type=raw,priority=1000,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/') }}
-
-            # commit short SHA
-            type=sha
+            # RMAPI variant branch and SHA tags
+            type=ref,event=branch,suffix=-rmapi${{ env.RMAPI_VERSION }},enable=${{ matrix.variant == 'rmapi' }}
+            type=sha,suffix=-rmapi${{ env.RMAPI_VERSION }},enable=${{ matrix.variant == 'rmapi' }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -63,78 +80,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and Push Plain Image
+      - name: Build and Push ${{ matrix.variant }} Image
         id: docker_build
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
-          target: ephemeris
-          pull: true
-          push: ${{ (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')) && !contains(github.ref, 'rmapi') }}
-          platforms: linux/amd64,linux/arm64/v8
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  build-rmapi:
-    name: Build RMAPI Image
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: |
-            ghcr.io/rmitchellscott/ephemeris
-          tags: |
-            # For regular tags (v1.2.3), add rmapi suffix
-            type=ref,event=tag,suffix=-rmapi${{ env.RMAPI_VERSION }},enable=${{ !contains(github.ref, 'rmapi') }}
-            type=semver,pattern={{version}},suffix=-rmapi${{ env.RMAPI_VERSION }},enable=${{ !contains(github.ref, 'rmapi') }}
-            type=semver,pattern={{major}}.{{minor}},suffix=-rmapi${{ env.RMAPI_VERSION }},enable=${{ !contains(github.ref, 'rmapi') }}
-            type=semver,pattern={{major}},suffix=-rmapi${{ env.RMAPI_VERSION }},enable=${{ !contains(github.ref, 'rmapi') }}
-
-            # For rmapi tags (v1.2.3-rmapi0.0.31), use as-is
-            type=ref,event=tag,enable=${{ contains(github.ref, 'rmapi') }}
-            type=semver,pattern={{version}},enable=${{ contains(github.ref, 'rmapi') }}
-            type=semver,pattern={{major}}.{{minor}},enable=${{ contains(github.ref, 'rmapi') }}
-            type=semver,pattern={{major}},enable=${{ contains(github.ref, 'rmapi') }}
-
-            # Branch-based tags (main only)
-            type=ref,event=branch,suffix=-rmapi${{ env.RMAPI_VERSION }}
-
-            # Commit short SHA with rmapi suffix
-            type=sha,suffix=-rmapi${{ env.RMAPI_VERSION }}
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and Push RMAPI Image
-        id: docker_build
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./Dockerfile
-          target: ephemeris-rmapi
-          build-args: |
-            RMAPI_VERSION=${{ env.RMAPI_VERSION }}
+          target: ${{ matrix.target }}
+          build-args: ${{ matrix.build_args }}
           pull: true
           push: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') }}
           platforms: linux/amd64,linux/arm64/v8
