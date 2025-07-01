@@ -81,6 +81,7 @@ services:
 
 ### Docker
 ```shell
+# Standard version (default)
 docker run --rm \
   -v "$(pwd)/calendars:/app/calendars" \
   -v "$(pwd)/output:/app/output" \
@@ -89,6 +90,23 @@ docker run --rm \
   -e TZ=America/Denver \
   -e TIME_DATE_RANGE=week \
   ghcr.io/rmitchellscott/ephemeris
+
+# Version with rmapi bundled
+docker run --rm \
+  -v "$(pwd)/calendars:/app/calendars" \
+  -v "$(pwd)/output:/app/output" \
+  -v "$(pwd)/config.yaml:/app/config.yaml" \
+  -v "$(pwd)/feeds_meta.yaml:/app/feeds_meta.yaml" \
+  -e TZ=America/Denver \
+  -e TIME_DATE_RANGE=week \
+  ghcr.io/rmitchellscott/ephemeris:main-rmapi0.0.30
+
+# Build locally
+# Standard version (without rmapi)
+docker build --target ephemeris -t ephemeris .
+
+# Version with rmapi (default build)
+docker build -t ephemeris-rmapi .
 ```
 
 ### Python
