@@ -41,6 +41,8 @@ These screenshots broadly show the layout options that are possible. See [Custom
 
 ## Getting Started
 
+If using with a reMarkable tablet, I ship an image that bundles the rmapi binary. [Check out the wiki for more info.](https://github.com/rmitchellscott/ephemeris/wiki/Sending-to-reMarkable#option-1--native-cloud-sync)
+
 ### Calendar Configuration
 
 The program uses a YAML configuration file to set up the calendars:
