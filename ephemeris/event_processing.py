@@ -282,11 +282,35 @@ def expand_event_for_day(
 
     else:
         # One‑off only for non‑recurring events
-        if isinstance(start, datetime) and start.date() == target_date:
+        if isinstance(start, datetime):
             end_raw = _get_raw_end(comp)
-            end     = normalize(end_raw, 'dtend')
-            meta = {'uid': uid, 'calendar_color': color, 'all_day': False}
-            instances.append((start, end, str(comp.get('SUMMARY','')), meta))
+            end = normalize(end_raw, 'dtend')
+            
+            # Check if this multi-day event spans the target date
+            if start.date() <= target_date <= end.date():
+                # Determine if this is the first day, last day, or middle day
+                is_first_day = start.date() == target_date
+                is_last_day = end.date() == target_date
+                is_middle_day = not is_first_day and not is_last_day
+                
+                if is_first_day:
+                    # First day: show actual start time to end of day
+                    event_start = start
+                    event_end = end if end.date() == target_date else sod_next
+                    meta = {'uid': uid, 'calendar_color': color, 'all_day': False}
+                    instances.append((event_start, event_end, str(comp.get('SUMMARY','')), meta))
+                elif is_last_day:
+                    # Last day: show start of day to actual end time
+                    event_start = sod
+                    event_end = end
+                    meta = {'uid': uid, 'calendar_color': color, 'all_day': False}
+                    instances.append((event_start, event_end, str(comp.get('SUMMARY','')), meta))
+                elif is_middle_day:
+                    # Middle day: convert to all-day event
+                    event_start = sod
+                    event_end = sod_next
+                    meta = {'uid': uid, 'calendar_color': color, 'all_day': True}
+                    instances.append((event_start, event_end, str(comp.get('SUMMARY','')), meta))
 
     grid_start = sod.replace(hour=settings.START_HOUR)
     grid_end   = sod.replace(hour=settings.END_HOUR)
@@ -331,14 +355,17 @@ def filter_events_for_day(events: list[tuple], target_date: date) -> list[tuple]
     for st, en, title, meta in events:
         local_start = st
         if not meta.get('all_day'):
-            if local_start.date() != target_date:
+            # For timed events, check if the event spans the target date
+            if not (st.date() <= target_date <= en.date()):
                 continue
-            if local_start.hour < settings.EXCLUDE_BEFORE:
-                logger.opt(colors=True).log("EVENTS","<yellow>Dropped (too early):</yellow> '{}' at {}:{}.",title, local_start.hour, local_start.minute)
-                continue
-            if local_start.hour >= settings.END_HOUR:
-                logger.opt(colors=True).log("EVENTS","<yellow>Dropped (too late):</yellow> '{}' at {}:{}.",title, local_start.hour, local_start.minute)
-                continue
+            # Apply time filters only to events that start on the target date
+            if local_start.date() == target_date:
+                if local_start.hour < settings.EXCLUDE_BEFORE:
+                    logger.opt(colors=True).log("EVENTS","<yellow>Dropped (too early):</yellow> '{}' at {}:{}.",title, local_start.hour, local_start.minute)
+                    continue
+                if local_start.hour >= settings.END_HOUR:
+                    logger.opt(colors=True).log("EVENTS","<yellow>Dropped (too late):</yellow> '{}' at {}:{}.",title, local_start.hour, local_start.minute)
+                    continue
         tl = title.lower()
         status = meta.get('status','').lower()
         if any(v in tl for v in filter_list) or status in filter_list:
