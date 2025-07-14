@@ -1,5 +1,5 @@
 
-ARG RMAPI_VERSION=v0.0.30-mitchell.1
+ARG RMAPI_VERSION=0.0.31
 
 FROM python:3.13-alpine AS ephemeris
 
@@ -18,7 +18,7 @@ COPY ephemeris.py .
 CMD ["python", "ephemeris.py"]
 
 # Rmapi stage
-FROM ghcr.io/rmitchellscott/rmapi:${RMAPI_VERSION} AS rmapi-binary
+FROM ghcr.io/ddvk/rmapi:v${RMAPI_VERSION} AS rmapi-binary
 
 # Ephemeris with rmapi
 FROM ephemeris AS ephemeris-rmapi

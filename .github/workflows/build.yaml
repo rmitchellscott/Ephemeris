@@ -1,7 +1,7 @@
 name: build-docker
 
 env:
-  RMAPI_VERSION: v0.0.30-mitchell.1
+  RMAPI_VERSION: 0.0.31
 on:
   push:
     branches:
