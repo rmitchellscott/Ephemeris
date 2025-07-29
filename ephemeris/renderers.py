@@ -730,129 +730,130 @@ def render_schedule_pdf(
                 display_title = display_title.rstrip() + "..."
 
             # Draw title
-            y_text = y_start - title_y_offset
-            c.drawString(box_x + 2 + text_padding, y_text, display_title)
+            if draw_text:
+                y_text = y_start - title_y_offset
+                c.drawString(box_x + 2 + text_padding, y_text, display_title)
             font_size, y_offset = get_time_font_and_offset(duration_minutes)
             c.setFont("Montserrat-Regular", font_size)
             y_text = y_start - y_offset
             time_label = f"{fmt_time(start)} - {fmt_time(end)}"
-        if draw_text:
-            # 1) Find a "directly above" event in any higher layer
-            has_direct_above = False
-            above_event = None
-            min_layer_diff = float("inf")
-            min_delta = None
-            for other in events:
-                if other["layer_index"] <= event["layer_index"]:
-                    continue
-                if start_eff < other["end"] and other["start"] < end_eff:
-                    delta = (other["start"] - start_eff).total_seconds()
-                    if delta < 30 * 60:
-                        layer_diff = other["layer_index"] - event["layer_index"]
-                        if layer_diff < min_layer_diff or (
-                            layer_diff == min_layer_diff and (min_delta is None or abs(delta) < min_delta)
-                        ):
-                            has_direct_above = True
-                            above_event = other
-                            min_layer_diff = layer_diff
-                            min_delta = abs(delta)
-            # detect if title is too wide for inline (and event ≥ 60 min)
-            raw_title_w = c.stringWidth(title, "Montserrat-Regular", title_font_size)
-            inline_space = (
-                box_width
-                - 4
-                - 2 * text_padding
-                - c.stringWidth(time_label, "Montserrat-Regular", time_font_size)
-            )
-            should_move_for_title = (
-                duration_minutes >= 60
-                and raw_title_w > inline_space
-            )
-            # 2) Print & draw
-            hide_time = has_direct_above and duration_minutes < 60
-            move_time = (has_direct_above and duration_minutes >= 60) or should_move_for_title
-
-            c.setFont("Montserrat-Regular", time_font_size)
-
-            # Shift time horizontally if we have an overlapping event, but space to move it to
-            horizontal_shift = False
-            if duration_minutes < 60 and has_direct_above:
-                # find X of the overlapping box’s left edge
-                other_w = total_width * above_event["width_frac"]
-                other_x = layout["grid_right"] - other_w
-                # how many points from our left padding to that edge?
-                visible_space = (other_x - (box_x + 2 + text_padding))
-                # how much width do we need?
-                title_w = c.stringWidth(display_title, "Montserrat-Regular", title_font_size)
-                time_w  = c.stringWidth(time_label,    "Montserrat-Regular", time_font_size)
-                needed = title_w + time_w + text_padding
-                if needed <= visible_space:
-                    horizontal_shift = True
-
-            # Handle edge case where moving the time would force it off the grid
-            if move_time:
-                # compute the would-be y_time for the moved label
-                y_title = y_start - title_y_offset
-                y_time  = y_title - (text_padding / 2) - time_y_offset
-                # if that y_time falls below grid_bottom, don’t move it
-                if y_time < layout["grid_bottom"]:
-                    move_time = False
-                    hide_time = True
-            if horizontal_shift:
-                logger.opt(colors=True).log(
-                    "VISUAL",
-                    "        <cyan>Moving time horizontally because overlapping event {} @ {}.</cyan>",
-                    above_event["title"],
-                    above_event["start"].strftime("%H:%M"),
+            if draw_text:
+                # 1) Find a "directly above" event in any higher layer
+                has_direct_above = False
+                above_event = None
+                min_layer_diff = float("inf")
+                min_delta = None
+                for other in events:
+                    if other["layer_index"] <= event["layer_index"]:
+                        continue
+                    if start_eff < other["end"] and other["start"] < end_eff:
+                        delta = (other["start"] - start_eff).total_seconds()
+                        if delta < 30 * 60:
+                            layer_diff = other["layer_index"] - event["layer_index"]
+                            if layer_diff < min_layer_diff or (
+                                layer_diff == min_layer_diff and (min_delta is None or abs(delta) < min_delta)
+                            ):
+                                has_direct_above = True
+                                above_event = other
+                                min_layer_diff = layer_diff
+                                min_delta = abs(delta)
+                # detect if title is too wide for inline (and event ≥ 60 min)
+                raw_title_w = c.stringWidth(title, "Montserrat-Regular", title_font_size)
+                inline_space = (
+                    box_width
+                    - 4
+                    - 2 * text_padding
+                    - c.stringWidth(time_label, "Montserrat-Regular", time_font_size)
                 )
-                other_w = total_width * above_event["width_frac"]
-                other_x = layout["grid_right"] - other_w
-                x_time = other_x - text_padding
-                y_time = y_start - y_offset
-                c.drawRightString(x_time, y_time, time_label)
-            elif hide_time:
-                logger.opt(colors=True).log(
-                    "VISUAL",
-                    "        <yellow>Hiding time because overlapping event {} @ {}.</yellow>",
-                    above_event["title"],
-                    above_event["start"].strftime("%H:%M"),
+                should_move_for_title = (
+                    duration_minutes >= 60
+                    and raw_title_w > inline_space
                 )
-            elif move_time:
-                if should_move_for_title:
+                # 2) Print & draw
+                hide_time = has_direct_above and duration_minutes < 60
+                move_time = (has_direct_above and duration_minutes >= 60) or should_move_for_title
+
+                c.setFont("Montserrat-Regular", time_font_size)
+
+                # Shift time horizontally if we have an overlapping event, but space to move it to
+                horizontal_shift = False
+                if duration_minutes < 60 and has_direct_above:
+                    # find X of the overlapping box’s left edge
+                    other_w = total_width * above_event["width_frac"]
+                    other_x = layout["grid_right"] - other_w
+                    # how many points from our left padding to that edge?
+                    visible_space = (other_x - (box_x + 2 + text_padding))
+                    # how much width do we need?
+                    title_w = c.stringWidth(display_title, "Montserrat-Regular", title_font_size)
+                    time_w  = c.stringWidth(time_label,    "Montserrat-Regular", time_font_size)
+                    needed = title_w + time_w + text_padding
+                    if needed <= visible_space:
+                        horizontal_shift = True
+
+                # Handle edge case where moving the time would force it off the grid
+                if move_time:
+                    # compute the would-be y_time for the moved label
+                    y_title = y_start - title_y_offset
+                    y_time  = y_title - (text_padding / 2) - time_y_offset
+                    # if that y_time falls below grid_bottom, don’t move it
+                    if y_time < layout["grid_bottom"]:
+                        move_time = False
+                        hide_time = True
+                if horizontal_shift:
                     logger.opt(colors=True).log(
                         "VISUAL",
-                        "        <cyan>Moving time because the title is too long.</cyan>",
-                    )
-                else:
-                    logger.opt(colors=True).log(
-                        "VISUAL",
-                        "        <cyan>Moving time because overlapping event {} @ {}.</cyan>",
+                        "        <cyan>Moving time horizontally because overlapping event {} @ {}.</cyan>",
                         above_event["title"],
                         above_event["start"].strftime("%H:%M"),
                     )
-                y_title = y_start - title_y_offset
-                y_time = y_title - (text_padding / 2) - time_y_offset
-                x_time = box_x + 2 + text_padding
-                c.drawString(x_time, y_time, time_label)
-            else:
-                logger.log(
-                    "VISUAL",
-                    "        Drawing inline time; no overlapping event detected.",
-                    title,
-                    int(duration_minutes),
-                )
-                y_time = y_start - y_offset
-                c.drawRightString(box_x + box_width - text_padding, y_time, time_label)
+                    other_w = total_width * above_event["width_frac"]
+                    other_x = layout["grid_right"] - other_w
+                    x_time = other_x - text_padding
+                    y_time = y_start - y_offset
+                    c.drawRightString(x_time, y_time, time_label)
+                elif hide_time:
+                    logger.opt(colors=True).log(
+                        "VISUAL",
+                        "        <yellow>Hiding time because overlapping event {} @ {}.</yellow>",
+                        above_event["title"],
+                        above_event["start"].strftime("%H:%M"),
+                    )
+                elif move_time:
+                    if should_move_for_title:
+                        logger.opt(colors=True).log(
+                            "VISUAL",
+                            "        <cyan>Moving time because the title is too long.</cyan>",
+                        )
+                    else:
+                        logger.opt(colors=True).log(
+                            "VISUAL",
+                            "        <cyan>Moving time because overlapping event {} @ {}.</cyan>",
+                            above_event["title"],
+                            above_event["start"].strftime("%H:%M"),
+                        )
+                    y_title = y_start - title_y_offset
+                    y_time = y_title - (text_padding / 2) - time_y_offset
+                    x_time = box_x + 2 + text_padding
+                    c.drawString(x_time, y_time, time_label)
+                else:
+                    logger.log(
+                        "VISUAL",
+                        "        Drawing inline time; no overlapping event detected.",
+                        title,
+                        int(duration_minutes),
+                    )
+                    y_time = y_start - y_offset
+                    c.drawRightString(box_x + box_width - text_padding, y_time, time_label)
 
     bar_w          = 2
     
     if DRAW_ALL_DAY_BAND:
         # Draw label string
-        if draw_shapes:
+        if draw_text:
             if settings.MONOCHROME:
-                c.setStrokeGray(0)
+                c.setFillGray(0)
             else:
-                c.setStrokeGray(0.2)
+                c.setFillGray(0)  # Black text for the label
         draw_centered_multiline(
             c,
             label_lines,
