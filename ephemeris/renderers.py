@@ -583,13 +583,23 @@ def render_schedule_pdf(
         # Decide hide/move flags for time before ellipsizing
         has_direct_above = False
         above_event = None
+        min_layer_diff = float("inf")
+        min_delta = None
         for other in events:
-            if (other["layer_index"] == event["layer_index"] + 1
-                and start_eff < other["end"] and other["start"] < end_eff
-                and abs((other["start"] - start_eff).total_seconds()) <= 30*60):
-                has_direct_above = True
-                above_event = other
-                break
+            if other["layer_index"] <= event["layer_index"]:
+                continue
+            if not (start_eff < other["end"] and other["start"] < end_eff):
+                continue
+            delta = abs((other["start"] - start_eff).total_seconds())
+            if delta <= 30 * 60:
+                layer_diff = other["layer_index"] - event["layer_index"]
+                if layer_diff < min_layer_diff or (
+                    layer_diff == min_layer_diff and (min_delta is None or delta < min_delta)
+                ):
+                    has_direct_above = True
+                    above_event = other
+                    min_layer_diff = layer_diff
+                    min_delta = delta
         raw_title_w = c.stringWidth(title, "Montserrat-Regular", title_font_size)
         inline_space = (
             box_width
@@ -613,14 +623,16 @@ def render_schedule_pdf(
         # compute occlusion constraint regardless of hide/move
         max_w_occ = max_w_time
         for other in events:
-            if (other["layer_index"] == event["layer_index"] + 1
-                and start_eff < other["end"] and other["start"] < end_eff
-                and (other["start"] - start_eff).total_seconds() < 30*60):
+            if other["layer_index"] <= event["layer_index"]:
+                continue
+            if not (start_eff < other["end"] and other["start"] < end_eff):
+                continue
+            delta = (other["start"] - start_eff).total_seconds()
+            if delta < 30 * 60:
                 other_w  = total_width * other["width_frac"]
                 other_x  = layout["grid_right"]  - other_w
                 avail    = other_x - title_x_start - 2
                 max_w_occ = min(max_w_occ, avail)
-                break
 
         final_max_w = max(0, min(max_w_time, max_w_occ))
         display_title = title
@@ -641,17 +653,25 @@ def render_schedule_pdf(
         c.setFont("Montserrat-Regular", font_size)
         y_text = y_start - y_offset
         time_label = f"{fmt_time(start)} - {fmt_time(end)}"
-        # 1) Find a “directly above” event in the very next layer
+        # 1) Find a “directly above” event in any higher layer
         has_direct_above = False
         above_event = None
+        min_layer_diff = float("inf")
+        min_delta = None
         for other in events:
-            if other["layer_index"] == event["layer_index"] + 1:
-                if start_eff < other["end"] and other["start"] < end_eff:
-                    delta = (other["start"] - start_eff).total_seconds()
-                    if delta < 30 * 60:
+            if other["layer_index"] <= event["layer_index"]:
+                continue
+            if start_eff < other["end"] and other["start"] < end_eff:
+                delta = (other["start"] - start_eff).total_seconds()
+                if delta < 30 * 60:
+                    layer_diff = other["layer_index"] - event["layer_index"]
+                    if layer_diff < min_layer_diff or (
+                        layer_diff == min_layer_diff and (min_delta is None or abs(delta) < min_delta)
+                    ):
                         has_direct_above = True
                         above_event = other
-                        break
+                        min_layer_diff = layer_diff
+                        min_delta = abs(delta)
         # detect if title is too wide for inline (and event ≥ 60 min)
         raw_title_w = c.stringWidth(title, "Montserrat-Regular", title_font_size)
         inline_space = (
