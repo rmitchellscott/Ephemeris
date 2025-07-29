@@ -45,6 +45,13 @@ def main():
     out_pdf = settings.OUTPUT_PDF
     os.makedirs(os.path.dirname(out_pdf), exist_ok=True)
     c = canvas.Canvas(out_pdf, pagesize=get_page_size())
+    if settings.SEPARATE_TEXT:
+        bg_pdf = out_pdf.replace('.pdf', '_bg.pdf')
+        text_pdf = out_pdf.replace('.pdf', '_text.pdf')
+        c_bg = canvas.Canvas(bg_pdf, pagesize=get_page_size())
+        c_text = canvas.Canvas(text_pdf, pagesize=get_page_size())
+    else:
+        c_bg = c_text = None
 
     # 5) Load config, metadata, and events
     config = load_config()
@@ -133,11 +140,48 @@ def main():
 
         # render schedule
         tmp = f"/tmp/schedule_{d.isoformat()}.pdf"
-        render_schedule_pdf(timed, tmp, d, all_day_events=all_day, tz_local=settings.TZ_LOCAL, all_day_in_grid=settings.ALLDAY_IN_GRID, valid_dates=date_list, canvas_obj=c)
+        render_schedule_pdf(
+            timed,
+            tmp,
+            d,
+            all_day_events=all_day,
+            tz_local=settings.TZ_LOCAL,
+            all_day_in_grid=settings.ALLDAY_IN_GRID,
+            valid_dates=date_list,
+            canvas_obj=c,
+        )
+        if settings.SEPARATE_TEXT:
+            render_schedule_pdf(
+                timed,
+                tmp,
+                d,
+                all_day_events=all_day,
+                tz_local=settings.TZ_LOCAL,
+                all_day_in_grid=settings.ALLDAY_IN_GRID,
+                valid_dates=date_list,
+                canvas_obj=c_bg,
+                draw_text=False,
+                draw_shapes=True,
+            )
+            render_schedule_pdf(
+                timed,
+                tmp,
+                d,
+                all_day_events=all_day,
+                tz_local=settings.TZ_LOCAL,
+                all_day_in_grid=settings.ALLDAY_IN_GRID,
+                valid_dates=date_list,
+                canvas_obj=c_text,
+                draw_text=True,
+                draw_shapes=False,
+            )
         logger.debug("Rendered {}",d)
 
     # 10) Write out PDF
     c.save()
+    if settings.SEPARATE_TEXT:
+        c_bg.save()
+        c_text.save()
     logger.info("Wrote PDF to {}", out_pdf)
     
     if settings.FORMAT in ('png', 'both'):
@@ -150,10 +194,30 @@ def main():
         )
         logger.info("Exported PNGs to {}", png_dir)
 
+        if settings.SEPARATE_TEXT:
+            export_pdf_to_png(
+                pdf_path=bg_pdf,
+                date_list=date_list,
+                cover=False,  # Separate PDFs don't include cover page
+                output_dir=settings.OUTPUT_PNG_BG,
+                dpi=settings.PDF_DPI,
+            )
+            export_pdf_to_png(
+                pdf_path=text_pdf,
+                date_list=date_list,
+                cover=False,  # Separate PDFs don't include cover page
+                output_dir=settings.OUTPUT_PNG_TEXT,
+                dpi=settings.PDF_DPI,
+                transparent=True,
+            )
+        
         # If the user only wants PNGs, remove the PDF:
         if settings.FORMAT == 'png':
             os.remove(out_pdf)
             logger.info("Removed merged PDF at {}", out_pdf)
+            if settings.SEPARATE_TEXT:
+                os.remove(bg_pdf)
+                os.remove(text_pdf)
 
     # 11) Persist metadata
     save_meta({"_last_anchor": anchor, "events_hash": new_hash})

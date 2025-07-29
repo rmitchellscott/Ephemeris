@@ -75,22 +75,36 @@ def draw_gray_strip(c, page_width, strip_height=20):
         c.setFillColor(HexColor(hexcode))
         c.rect(i * swatch_width, y, swatch_width, strip_height, stroke=0, fill=1)
 
-def draw_mini_cal(c, year, month, weeks, x, y, mini_w, mini_h, highlight_day=None):
+def draw_mini_cal(
+    c,
+    year,
+    month,
+    weeks,
+    x,
+    y,
+    mini_w,
+    mini_h,
+    highlight_day=None,
+    *,
+    draw_text=True,
+    draw_shapes=True,
+):
     # Month label
-    c.setFont("Montserrat-Regular", 6)
     month_name = calendar.month_name[month]
-    c.drawCentredString(x + mini_w/2, y + mini_h + 4, f"{month_name} {year}")
+    if draw_text:
+        c.setFont("Montserrat-Regular", 6)
+        c.drawCentredString(x + mini_w/2, y + mini_h + 4, f"{month_name} {year}")
     logger.log("VISUAL","Drawing mini-calendar for {}.", month_name)
     logger.log("VISUAL","    Height: {h:.2f}, Width: {w:.2f}",h=mini_h,w=mini_w)
     # Weekday headers
     days   = ['S','M','T','W','T','F','S']
     cell_w = mini_w / 7
     cell_h = 8
-
-    c.setFont("Montserrat-Regular", 6)
-    for i, d in enumerate(days):
-        hx = x + i*cell_w + cell_w/2
-        c.drawCentredString(hx, y + mini_h - 6, d)
+    if draw_text:
+        c.setFont("Montserrat-Regular", 6)
+        for i, d in enumerate(days):
+            hx = x + i*cell_w + cell_w/2
+            c.drawCentredString(hx, y + mini_h - 6, d)
 
     valid = getattr(c, "_valid_destinations", set())
     # Day numbers
@@ -107,21 +121,20 @@ def draw_mini_cal(c, year, month, weeks, x, y, mini_w, mini_h, highlight_day=Non
             cx = xx + cell_w/2
             # vertical offset: roughly center. adjust v_off if you like.
             v_off = cell_h/2 - 2
-            c.setFont("Montserrat-Regular", 6)
+            if draw_text:
+                c.setFont("Montserrat-Regular", 6)
 
             if highlight_day and day == highlight_day:
-                # draw black highlight box
-                c.setFillColor(black)
-                c.rect(xx, yy, cell_w, cell_h, stroke=0, fill=1)
+                if draw_shapes:
+                    c.setFillColor(black)
+                    c.rect(xx, yy, cell_w, cell_h, stroke=0, fill=1)
 
-                # draw the day number in white, centered
-                c.setFillColor(white)
-                c.setFont("Montserrat-SemiBold", 6)
-                c.drawCentredString(cx, yy + v_off, str(day))
-
-                # reset
-                c.setFillColor(black)
-                c.setFont("Montserrat-Regular", 6)
+                if draw_text:
+                    c.setFillColor(white)
+                    c.setFont("Montserrat-SemiBold", 6)
+                    c.drawCentredString(cx, yy + v_off, str(day))
+                    c.setFillColor(black)
+                    c.setFont("Montserrat-Regular", 6)
 
             else:
                 # internal link rectangle
@@ -138,7 +151,8 @@ def draw_mini_cal(c, year, month, weeks, x, y, mini_w, mini_h, highlight_day=Non
                     if settings.INDICATE_DAYS:
                         c.setFont("Montserrat-Medium", 6)
                 # normal day, centered
-                c.drawCentredString(cx, yy + v_off, str(day))
+                if draw_text:
+                    c.drawCentredString(cx, yy + v_off, str(day))
 
 def draw_rect_with_optional_round(c, x, y, w, h, radius,
                                   round_top=True, round_bottom=True,
@@ -198,7 +212,9 @@ def draw_centered_multiline(
     x,
     band_bottom,
     band_height,
-    line_spacing=1.2
+    line_spacing=1.2,
+    *,
+    draw_text=True,
 ):
     face     = pdfmetrics.getFont(font_name).face
     ascent   = face.ascent  / 1000 * font_size
@@ -214,87 +230,96 @@ def draw_centered_multiline(
         - (line_height + ascent - descent) / 2
     )
 
-    c.setFont(font_name, font_size)
-    for i, line in enumerate(lines):
-        y = y_first + (len(lines)-1 - i) * line_height
-        c.drawString(x, y, line)
+    if draw_text:
+        c.setFont(font_name, font_size)
+        for i, line in enumerate(lines):
+            y = y_first + (len(lines)-1 - i) * line_height
+            c.drawString(x, y, line)
 
 def render_time_grid(
     c,
     date_label,
     layout,
-    override_label_hour: int | None   = None,
+    override_label_hour: int | None = None,
     override_label_text: list[str] | None = None,
+    *,
+    draw_text=True,
+    draw_shapes=True,
 ):
     GRIDLINE_COLOR = settings.GRIDLINE_COLOR
     text_padding = layout["text_padding"]
 
     # Vertical line
-    c.setStrokeColor(css_color_to_hex(GRIDLINE_COLOR))
-    c.setLineWidth(0.5)
-    c.line(
-        layout["grid_left"] +0.25,
-        layout["grid_bottom"] + 1,
-        layout["grid_left"] +0.25,
-        layout["grid_top"] + 0.25
-    )
+    if draw_shapes:
+        c.setStrokeColor(css_color_to_hex(GRIDLINE_COLOR))
+        c.setLineWidth(0.5)
+        c.line(
+            layout["grid_left"] +0.25,
+            layout["grid_bottom"] + 1,
+            layout["grid_left"] +0.25,
+            layout["grid_top"] + 0.25
+        )
     logger.log("VISUAL","Drawing time grid between {} - {}.", layout["start_hour"], layout["end_hour"])
     logger.log("VISUAL","    Top: {t:.2f}, Bottom: {b:.2f}",t=layout["grid_top"],b=layout["grid_bottom"])
     logger.log("VISUAL","    Left: {l:.2f}, Right: {l:.2f}",l=layout["grid_left"] ,r=layout["grid_right"])
     
     # Draw the grid heading
-    c.setStrokeColor(css_color_to_hex(GRIDLINE_COLOR))
-    c.setFont("Montserrat-SemiBold", 10)
-    c.drawString((layout["grid_left"] +0.25), (layout["grid_top"] + 0.25 + text_padding), "Schedule")
+    if draw_text:
+        c.setStrokeColor(css_color_to_hex(GRIDLINE_COLOR))
+        c.setFont("Montserrat-SemiBold", 10)
+        c.drawString((layout["grid_left"] +0.25), (layout["grid_top"] + 0.25 + text_padding), "Schedule")
 
     # Draw the horizontal hour lines and labels
     for hour in range(layout["start_hour"], layout["end_hour"] + 1):
         y = time_to_y(datetime.combine(date_label, time(hour=hour)), layout)
         # Emphasize the start hour
-        if hour == layout["start_hour"]:
-            c.setStrokeGray(0)
-            c.setLineWidth(1)
-        else:
-            c.setStrokeColor(css_color_to_hex(GRIDLINE_COLOR))
-            c.setLineWidth(0.5)
-        c.line(layout["grid_left"], y, layout["grid_right"], y)
+        if draw_shapes:
+            if hour == layout["start_hour"]:
+                c.setStrokeGray(0)
+                c.setLineWidth(1)
+            else:
+                c.setStrokeColor(css_color_to_hex(GRIDLINE_COLOR))
+                c.setLineWidth(0.5)
+            c.line(layout["grid_left"], y, layout["grid_right"], y)
         # Draw either the override text or the normal time
         if override_label_hour is not None \
            and override_label_text is not None \
            and hour == override_label_hour:
             # two-line centered label inside this hour-slot
-            if settings.MONOCHROME:
-                c.setFillGray(0)
-            else:
-                c.setFillGray(0.2)
-            c.setFont("Montserrat-SemiBold", 7)
-            c.drawRightString(
-                layout["grid_left"] - 7,
-                y + 2,
-                "All",
-            )
-            c.drawRightString(
-                layout["grid_left"] - 5,
-                y - 6,
-                "Day",
-            )
+            if draw_text:
+                if settings.MONOCHROME:
+                    c.setFillGray(0)
+                else:
+                    c.setFillGray(0.2)
+                c.setFont("Montserrat-SemiBold", 7)
+                c.drawRightString(
+                    layout["grid_left"] - 7,
+                    y + 2,
+                    "All",
+                )
+                c.drawRightString(
+                    layout["grid_left"] - 5,
+                    y - 6,
+                    "Day",
+                )
 
         else:
-            if settings.MONOCHROME:
-                c.setFillGray(0)
-            else:
-                c.setFillGray(0.2)
-            c.setFont("Montserrat-SemiBold", 7)
-            label = (
-                f"{hour:02}:00"
-                if settings.USE_24H
-                else datetime.combine(date_label, time(hour=hour)).strftime("%-I %p")
-            )
-            c.drawRightString(
-                layout["grid_left"] - 5,
-                y - 2,
-                label,
-            )
+            if draw_text:
+                if settings.MONOCHROME:
+                    c.setFillGray(0)
+                else:
+                    c.setFillGray(0.2)
+                c.setFont("Montserrat-SemiBold", 7)
+                label = (
+                    f"{hour:02}:00"
+                    if settings.USE_24H
+                    else datetime.combine(date_label, time(hour=hour)).strftime("%-I %p")
+                )
+                c.drawRightString(
+                    layout["grid_left"] - 5,
+                    y - 2,
+                    label,
+                )
 
 def render_cover(
      c: canvas.Canvas,
@@ -362,6 +387,9 @@ def render_schedule_pdf(
     all_day_in_grid: bool = False,
     valid_dates: list[datetime.date] = None,
     canvas_obj: canvas.Canvas = None,
+    *,
+    draw_text: bool = True,
+    draw_shapes: bool = True,
 ):
     """
     Draw a full-day schedule:
@@ -425,19 +453,21 @@ def render_schedule_pdf(
         MINICAL_ALIGN = "right"
 
     # Header/title
-    c.setFillGray(0)
-    title_y = page_top - heading_ascent # Pin ascenders to page_top
-    c.setFont("Montserrat-Bold", heading_size)
-    c.drawCentredString(width/2, title_y, date_label.strftime('%A, %B %d, %Y'))
+    title_y = page_top - heading_ascent  # Pin ascenders to page_top
+    if draw_text:
+        c.setFillGray(0)
+        c.setFont("Montserrat-Bold", heading_size)
+        c.drawCentredString(width/2, title_y, date_label.strftime('%A, %B %d, %Y'))
 
     # Line under title
     sep_y = title_y - element_pad
-    if settings.MONOCHROME:
-        c.setStrokeGray(0)
-    else:
-        c.setStrokeGray(0.4)
-    c.setLineWidth(1)
-    c.line(page_left, sep_y, page_right, sep_y)
+    if draw_shapes:
+        if settings.MONOCHROME:
+            c.setStrokeGray(0)
+        else:
+            c.setStrokeGray(0.4)
+        c.setLineWidth(1)
+        c.line(page_left, sep_y, page_right, sep_y)
 
     # Mini Calendar Definitions
     mini_w       = 80
@@ -484,22 +514,52 @@ def render_schedule_pdf(
         weeks1 = cal.monthdayscalendar(first_of_month.year, first_of_month.month)
         weeks2 = cal.monthdayscalendar(next_month.year, next_month.month)
 
-        draw_mini_cal(c, first_of_month.year, first_of_month.month,
-                    weeks1, x_start, y_cal, mini_w, mini_h,
-                    highlight_day=today.day)
+        draw_mini_cal(
+            c,
+            first_of_month.year,
+            first_of_month.month,
+            weeks1,
+            x_start,
+            y_cal,
+            mini_w,
+            mini_h,
+            highlight_day=today.day,
+            draw_text=draw_text,
+            draw_shapes=draw_shapes,
+        )
         if not MINICAL_ONLY_CURRENT:
-            draw_mini_cal(c, next_month.year, next_month.month,
-                    weeks2, x_start + mini_w + gap, y_cal, mini_w, mini_h)
+            draw_mini_cal(
+                c,
+                next_month.year,
+                next_month.month,
+                weeks2,
+                x_start + mini_w + gap,
+                y_cal,
+                mini_w,
+                mini_h,
+                draw_text=draw_text,
+                draw_shapes=draw_shapes,
+            )
 
     # Main Grid
     if all_day_in_grid:
         render_time_grid(
-            c, date_label, layout,
+            c,
+            date_label,
+            layout,
             override_label_hour=eff_start,
             override_label_text=["All Day", "Events"],
+            draw_text=draw_text,
+            draw_shapes=draw_shapes,
         )
     else:
-        render_time_grid(c, date_label, layout)
+        render_time_grid(
+            c,
+            date_label,
+            layout,
+            draw_text=draw_text,
+            draw_shapes=draw_shapes,
+        )
 
     # Events
     get_title_font_and_offset, get_time_font_and_offset = init_text_helpers(hour_height)
@@ -558,27 +618,49 @@ def render_schedule_pdf(
         radius = 3 if box_height < 6 else 4
         color_bar_width = 2
 
-        c.setStrokeColor(css_color_to_hex(event_stroke))
-        c.setLineWidth(.33)
-        c.setFillColor(HexColor(hex_color))
-        draw_rect_with_optional_round(c, box_x, clamped_y_end, box_width, clamped_h, radius, round_top = not breached_top,round_bottom= not breached_bottom,stroke=0,fill=1)
+        if draw_shapes:
+            c.setStrokeColor(css_color_to_hex(event_stroke))
+            c.setLineWidth(.33)
+            c.setFillColor(HexColor(hex_color))
+            draw_rect_with_optional_round(
+                c,
+                box_x,
+                clamped_y_end,
+                box_width,
+                clamped_h,
+                radius,
+                round_top=not breached_top,
+                round_bottom=not breached_bottom,
+                stroke=0,
+                fill=1,
+            )
 
+            c.setFillColor(css_color_to_hex(event_fill))
+            draw_rect_with_optional_round(
+                c,
+                box_x + color_bar_width,
+                clamped_y_end,
+                box_width - color_bar_width,
+                clamped_h,
+                radius,
+                round_top=not breached_top,
+                round_bottom=not breached_bottom,
+                stroke=1,
+                fill=1,
+            )
 
-        c.setFillColor(css_color_to_hex(event_fill))
-        draw_rect_with_optional_round(c, box_x+ color_bar_width, clamped_y_end, box_width - color_bar_width, clamped_h, radius, round_top = not breached_top,round_bottom= not breached_bottom,stroke=1,fill=1)
-
-        c.setFillGray(0)
         duration_minutes = (end_eff - start_eff).total_seconds() / 60
 
         logger.log("VISUAL","Event: '{}' ({} min)", title, int(duration_minutes))
         logger.log("VISUAL","        Size: box_x: {x:.2f} | box_width: {w:.2f} | box_height: {h:.2f}", title, x=box_x, w=box_width, h=box_height)
 
-        font_size, y_offset = get_title_font_and_offset(duration_minutes)
-        c.setFont("Montserrat-Regular", font_size)
-        # Prepare labels (moved above ellipsizing)
-        time_label = f"{fmt_time(start)} - {fmt_time(end)}"
-        title_font_size, title_y_offset = get_title_font_and_offset((end_eff - start_eff).total_seconds()/60)
-        time_font_size,  time_y_offset  = get_time_font_and_offset((end_eff - start_eff).total_seconds()/60)
+        if draw_text:
+            font_size, y_offset = get_title_font_and_offset(duration_minutes)
+            c.setFont("Montserrat-Regular", font_size)
+            # Prepare labels (moved above ellipsizing)
+            time_label = f"{fmt_time(start)} - {fmt_time(end)}"
+            title_font_size, title_y_offset = get_title_font_and_offset((end_eff - start_eff).total_seconds()/60)
+            time_font_size,  time_y_offset  = get_time_font_and_offset((end_eff - start_eff).total_seconds()/60)
 
         # Decide hide/move flags for time before ellipsizing
         has_direct_above = False
@@ -600,151 +682,177 @@ def render_schedule_pdf(
                     above_event = other
                     min_layer_diff = layer_diff
                     min_delta = delta
-        raw_title_w = c.stringWidth(title, "Montserrat-Regular", title_font_size)
-        inline_space = (
-            box_width
-            - 4
-            - 2 * text_padding
-            - c.stringWidth(time_label, "Montserrat-Regular", time_font_size)
-        )
+        if draw_text:
+            raw_title_w = c.stringWidth(title, "Montserrat-Regular", title_font_size)
+            inline_space = (
+                box_width
+                - 4
+                - 2 * text_padding
+                - c.stringWidth(time_label, "Montserrat-Regular", time_font_size)
+            )
 
-        should_move_for_title = duration_minutes >= 60 and raw_title_w > inline_space
-        hide_time = has_direct_above and duration_minutes < 60
-        move_time = (has_direct_above and duration_minutes >= 60) or should_move_for_title
+            should_move_for_title = duration_minutes >= 60 and raw_title_w > inline_space
+            hide_time = has_direct_above and duration_minutes < 60
+            move_time = (has_direct_above and duration_minutes >= 60) or should_move_for_title
 
-        # Ellipsize title:
-        #   reserve space for the time if inline; but always avoid occlusion by a
-        #   next-layer box whose start is within 30 min
-        title_x_start = box_x + 4 + text_padding
-        time_reserve  = 0 if (hide_time or move_time) else \
-                        c.stringWidth(time_label, "Montserrat-Regular", time_font_size)
-        max_w_time    = box_width - 4 - 2 * text_padding - time_reserve
+            # Ellipsize title:
+            #   reserve space for the time if inline; but always avoid occlusion by a
+            #   next-layer box whose start is within 30 min
+            title_x_start = box_x + 4 + text_padding
+            time_reserve  = 0 if (hide_time or move_time) else \
+                            c.stringWidth(time_label, "Montserrat-Regular", time_font_size)
+            max_w_time    = box_width - 4 - 2 * text_padding - time_reserve
 
-        # compute occlusion constraint regardless of hide/move
-        max_w_occ = max_w_time
-        for other in events:
-            if other["layer_index"] <= event["layer_index"]:
-                continue
-            if not (start_eff < other["end"] and other["start"] < end_eff):
-                continue
-            delta = (other["start"] - start_eff).total_seconds()
-            if delta < 30 * 60:
-                other_w  = total_width * other["width_frac"]
-                other_x  = layout["grid_right"]  - other_w
-                avail    = other_x - title_x_start - 2
-                max_w_occ = min(max_w_occ, avail)
-
-        final_max_w = max(0, min(max_w_time, max_w_occ))
-        display_title = title
-        if c.stringWidth(display_title, "Montserrat-Regular", title_font_size) > final_max_w:
-            # truncate
-            while (
-                display_title
-                and c.stringWidth(display_title + "...", "Montserrat-Regular", title_font_size)
-                    > final_max_w
-            ):
-                display_title = display_title[:-1]
-            display_title = display_title.rstrip() + "..."
-
-        # Draw title
-        y_text = y_start - title_y_offset
-        c.drawString(box_x + 2 + text_padding, y_text, display_title)
-        font_size, y_offset = get_time_font_and_offset(duration_minutes)
-        c.setFont("Montserrat-Regular", font_size)
-        y_text = y_start - y_offset
-        time_label = f"{fmt_time(start)} - {fmt_time(end)}"
-        # 1) Find a “directly above” event in any higher layer
-        has_direct_above = False
-        above_event = None
-        min_layer_diff = float("inf")
-        min_delta = None
-        for other in events:
-            if other["layer_index"] <= event["layer_index"]:
-                continue
-            if start_eff < other["end"] and other["start"] < end_eff:
+            # compute occlusion constraint regardless of hide/move
+            max_w_occ = max_w_time
+            for other in events:
+                if other["layer_index"] <= event["layer_index"]:
+                    continue
+                if not (start_eff < other["end"] and other["start"] < end_eff):
+                    continue
                 delta = (other["start"] - start_eff).total_seconds()
                 if delta < 30 * 60:
-                    layer_diff = other["layer_index"] - event["layer_index"]
-                    if layer_diff < min_layer_diff or (
-                        layer_diff == min_layer_diff and (min_delta is None or abs(delta) < min_delta)
-                    ):
-                        has_direct_above = True
-                        above_event = other
-                        min_layer_diff = layer_diff
-                        min_delta = abs(delta)
-        # detect if title is too wide for inline (and event ≥ 60 min)
-        raw_title_w = c.stringWidth(title, "Montserrat-Regular", title_font_size)
-        inline_space = (
-            box_width
-            - 4
-            - 2 * text_padding
-            - c.stringWidth(time_label, "Montserrat-Regular", time_font_size)
-        )
-        should_move_for_title = (
-            duration_minutes >= 60
-            and raw_title_w > inline_space
-        )
-        # 2) Print & draw
-        hide_time = has_direct_above and duration_minutes < 60
-        move_time = (has_direct_above and duration_minutes >= 60) or should_move_for_title
+                    other_w = total_width * other["width_frac"]
+                    other_x = layout["grid_right"] - other_w
+                    avail = other_x - title_x_start - 2
+                    max_w_occ = min(max_w_occ, avail)
 
-        c.setFont("Montserrat-Regular", time_font_size)
+            final_max_w = max(0, min(max_w_time, max_w_occ))
+            display_title = title
+            if c.stringWidth(display_title, "Montserrat-Regular", title_font_size) > final_max_w:
+                # truncate
+                while (
+                    display_title
+                    and c.stringWidth(display_title + "...", "Montserrat-Regular", title_font_size)
+                    > final_max_w
+                ):
+                    display_title = display_title[:-1]
+                display_title = display_title.rstrip() + "..."
 
-        # Shift time horizontally if we have an overlapping event, but space to move it to
-        horizontal_shift = False
-        if duration_minutes < 60 and has_direct_above:
-            # find X of the overlapping box’s left edge
-            other_w = total_width * above_event["width_frac"]
-            other_x = layout["grid_right"] - other_w
-            # how many points from our left padding to that edge?
-            visible_space = (other_x - (box_x + 2 + text_padding))
-            # how much width do we need?
-            title_w = c.stringWidth(display_title, "Montserrat-Regular", title_font_size)
-            time_w  = c.stringWidth(time_label,    "Montserrat-Regular", time_font_size)
-            needed = title_w + time_w + text_padding
-            if needed <= visible_space:
-                horizontal_shift = True
+            # Draw title
+            y_text = y_start - title_y_offset
+            c.drawString(box_x + 2 + text_padding, y_text, display_title)
+            font_size, y_offset = get_time_font_and_offset(duration_minutes)
+            c.setFont("Montserrat-Regular", font_size)
+            y_text = y_start - y_offset
+            time_label = f"{fmt_time(start)} - {fmt_time(end)}"
+        if draw_text:
+            # 1) Find a "directly above" event in any higher layer
+            has_direct_above = False
+            above_event = None
+            min_layer_diff = float("inf")
+            min_delta = None
+            for other in events:
+                if other["layer_index"] <= event["layer_index"]:
+                    continue
+                if start_eff < other["end"] and other["start"] < end_eff:
+                    delta = (other["start"] - start_eff).total_seconds()
+                    if delta < 30 * 60:
+                        layer_diff = other["layer_index"] - event["layer_index"]
+                        if layer_diff < min_layer_diff or (
+                            layer_diff == min_layer_diff and (min_delta is None or abs(delta) < min_delta)
+                        ):
+                            has_direct_above = True
+                            above_event = other
+                            min_layer_diff = layer_diff
+                            min_delta = abs(delta)
+            # detect if title is too wide for inline (and event ≥ 60 min)
+            raw_title_w = c.stringWidth(title, "Montserrat-Regular", title_font_size)
+            inline_space = (
+                box_width
+                - 4
+                - 2 * text_padding
+                - c.stringWidth(time_label, "Montserrat-Regular", time_font_size)
+            )
+            should_move_for_title = (
+                duration_minutes >= 60
+                and raw_title_w > inline_space
+            )
+            # 2) Print & draw
+            hide_time = has_direct_above and duration_minutes < 60
+            move_time = (has_direct_above and duration_minutes >= 60) or should_move_for_title
 
-        # Handle edge case where moving the time would force it off the grid
-        if move_time:
-            # compute the would-be y_time for the moved label
-            y_title = y_start - title_y_offset
-            y_time  = y_title - (text_padding / 2) - time_y_offset
-            # if that y_time falls below grid_bottom, don’t move it
-            if y_time < layout["grid_bottom"]:
-                move_time = False
-                hide_time = True
-        if horizontal_shift:
-            logger.opt(colors=True).log("VISUAL","        <cyan>Moving time horizontally because overlapping event {} @ {}.</cyan>", above_event["title"],above_event['start'].strftime('%H:%M') )
-            other_w = total_width * above_event["width_frac"]
-            other_x = layout["grid_right"] - other_w
-            x_time = other_x - text_padding
-            y_time = y_start - y_offset
-            c.drawRightString(x_time, y_time, time_label)
-        elif hide_time:
-            logger.opt(colors=True).log("VISUAL","        <yellow>Hiding time because overlapping event {} @ {}.</yellow>", above_event["title"],above_event['start'].strftime('%H:%M') )
-        elif move_time:
-            if should_move_for_title:
-                logger.opt(colors=True).log("VISUAL","        <cyan>Moving time because the title is too long.</cyan>")
+            c.setFont("Montserrat-Regular", time_font_size)
+
+            # Shift time horizontally if we have an overlapping event, but space to move it to
+            horizontal_shift = False
+            if duration_minutes < 60 and has_direct_above:
+                # find X of the overlapping box’s left edge
+                other_w = total_width * above_event["width_frac"]
+                other_x = layout["grid_right"] - other_w
+                # how many points from our left padding to that edge?
+                visible_space = (other_x - (box_x + 2 + text_padding))
+                # how much width do we need?
+                title_w = c.stringWidth(display_title, "Montserrat-Regular", title_font_size)
+                time_w  = c.stringWidth(time_label,    "Montserrat-Regular", time_font_size)
+                needed = title_w + time_w + text_padding
+                if needed <= visible_space:
+                    horizontal_shift = True
+
+            # Handle edge case where moving the time would force it off the grid
+            if move_time:
+                # compute the would-be y_time for the moved label
+                y_title = y_start - title_y_offset
+                y_time  = y_title - (text_padding / 2) - time_y_offset
+                # if that y_time falls below grid_bottom, don’t move it
+                if y_time < layout["grid_bottom"]:
+                    move_time = False
+                    hide_time = True
+            if horizontal_shift:
+                logger.opt(colors=True).log(
+                    "VISUAL",
+                    "        <cyan>Moving time horizontally because overlapping event {} @ {}.</cyan>",
+                    above_event["title"],
+                    above_event["start"].strftime("%H:%M"),
+                )
+                other_w = total_width * above_event["width_frac"]
+                other_x = layout["grid_right"] - other_w
+                x_time = other_x - text_padding
+                y_time = y_start - y_offset
+                c.drawRightString(x_time, y_time, time_label)
+            elif hide_time:
+                logger.opt(colors=True).log(
+                    "VISUAL",
+                    "        <yellow>Hiding time because overlapping event {} @ {}.</yellow>",
+                    above_event["title"],
+                    above_event["start"].strftime("%H:%M"),
+                )
+            elif move_time:
+                if should_move_for_title:
+                    logger.opt(colors=True).log(
+                        "VISUAL",
+                        "        <cyan>Moving time because the title is too long.</cyan>",
+                    )
+                else:
+                    logger.opt(colors=True).log(
+                        "VISUAL",
+                        "        <cyan>Moving time because overlapping event {} @ {}.</cyan>",
+                        above_event["title"],
+                        above_event["start"].strftime("%H:%M"),
+                    )
+                y_title = y_start - title_y_offset
+                y_time = y_title - (text_padding / 2) - time_y_offset
+                x_time = box_x + 2 + text_padding
+                c.drawString(x_time, y_time, time_label)
             else:
-                logger.opt(colors=True).log("VISUAL","        <cyan>Moving time because overlapping event {} @ {}.</cyan>", above_event["title"],above_event['start'].strftime('%H:%M') )
-            y_title = y_start - title_y_offset
-            y_time  = y_title - (text_padding / 2) - time_y_offset
-            x_time  = box_x + 2 + text_padding
-            c.drawString(x_time, y_time, time_label)
-        else:
-            logger.log("VISUAL","        Drawing inline time; no overlapping event detected.", title, int(duration_minutes))
-            y_time = y_start - y_offset
-            c.drawRightString(box_x + box_width - text_padding, y_time, time_label)
+                logger.log(
+                    "VISUAL",
+                    "        Drawing inline time; no overlapping event detected.",
+                    title,
+                    int(duration_minutes),
+                )
+                y_time = y_start - y_offset
+                c.drawRightString(box_x + box_width - text_padding, y_time, time_label)
 
     bar_w          = 2
     
     if DRAW_ALL_DAY_BAND:
         # Draw label string
-        if settings.MONOCHROME:
-            c.setStrokeGray(0)
-        else:
-            c.setStrokeGray(0.2)
+        if draw_shapes:
+            if settings.MONOCHROME:
+                c.setStrokeGray(0)
+            else:
+                c.setStrokeGray(0.2)
         draw_centered_multiline(
             c,
             label_lines,
@@ -753,14 +861,17 @@ def render_schedule_pdf(
             x_label,
             band_bottom,
             band_height,
-            line_spacing=1.2
+            line_spacing=1.2,
+            draw_text=draw_text,
         )
 
         # Compute label‐column width
         c.setFont("Montserrat-SemiBold", all_day_label_font_size)
-        label_w = max(c.stringWidth(line, "Montserrat-SemiBold", all_day_label_font_size)
-                        for line in label_lines)
-        label_area = label_w + 2*text_padding
+        label_w = max(
+            c.stringWidth(line, "Montserrat-SemiBold", all_day_label_font_size)
+            for line in label_lines
+        )
+        label_area = label_w + 2 * text_padding
 
         n              = len(all_day_events)
         slots_per_col  = 4
@@ -775,17 +886,18 @@ def render_schedule_pdf(
 
         get_title_font_and_offset, _ = init_text_helpers(hour_height)
 
-        # Draw vertical separator
-        sep_x = events_left
-        # c.setStrokeGray(0.4)
-        c.setStrokeColor(black)
-        c.setLineWidth(0.5)
-        c.line(sep_x, band_bottom, sep_x, band_top)
+        if draw_shapes:
+            # Draw vertical separator
+            sep_x = events_left
+            c.setStrokeColor(black)
+            c.setLineWidth(0.5)
+            c.line(sep_x, band_bottom, sep_x, band_top)
 
-        # Draw box
-        c.setStrokeColor(black)
-        c.setLineWidth(0.5)
-        c.roundRect(band_left, band_bottom, band_width, band_height, 4, stroke=1, fill=0)
+        if draw_shapes:
+            # Draw box
+            c.setStrokeColor(black)
+            c.setLineWidth(0.5)
+            c.roundRect(band_left, band_bottom, band_width, band_height, 4, stroke=1, fill=0)
 
         # Draw the actual all day events, if they exist
         if all_day_events:
@@ -800,12 +912,13 @@ def render_schedule_pdf(
                 w = slot_w   - pad*3
                 h = slot_h   - pad*2
 
-                c.setFillColor(HexColor(meta.get("calendar_color", "#FFFFFF")))
-                c.roundRect(x, y, w, h, 4, stroke=0, fill=1)
-                c.setFillColor(css_color_to_hex(event_fill))
-                c.setStrokeColor(css_color_to_hex(event_stroke))
-                c.setLineWidth(0.33)
-                c.roundRect(x + bar_w, y, w - bar_w, h, 4, stroke=1, fill=1)
+                if draw_shapes:
+                    c.setFillColor(HexColor(meta.get("calendar_color", "#FFFFFF")))
+                    c.roundRect(x, y, w, h, 4, stroke=0, fill=1)
+                    c.setFillColor(css_color_to_hex(event_fill))
+                    c.setStrokeColor(css_color_to_hex(event_stroke))
+                    c.setLineWidth(0.33)
+                    c.roundRect(x + bar_w, y, w - bar_w, h, 4, stroke=1, fill=1)
 
                 # size the font as a fixed fraction of the box height
                 # e.g. use 40% of the box height
@@ -841,22 +954,24 @@ def render_schedule_pdf(
                     if txt != title:
                         txt = txt.rstrip() + "..."
 
-                    text_y = y + h - title_baseline
-                    time_y = y + h - time_baseline
-                    c.setFillGray(0)
-                    c.drawString(x + bar_w + 2, text_y, txt)
+                    if draw_text:
+                        text_y = y + h - title_baseline
+                        time_y = y + h - time_baseline
+                        c.setFillGray(0)
+                        c.drawString(x + bar_w + 2, text_y, txt)
 
-                    c.setFont("Montserrat-Regular", time_fs)
-                    c.drawRightString(x + w - text_padding, time_y, time_label)
+                        c.setFont("Montserrat-Regular", time_fs)
+                        c.drawRightString(x + w - text_padding, time_y, time_label)
                 else:
                     while c.stringWidth(txt + "...", "Montserrat-Regular", title_fs) > inner_w:
                         txt = txt[:-1]
                     if txt != title:
                         txt = txt.rstrip() + "..."
 
-                    text_y = y + h - title_baseline
-                    c.setFillGray(0)
-                    c.drawString(x + bar_w + 2, text_y, txt)
+                    if draw_text:
+                        text_y = y + h - title_baseline
+                        c.setFillGray(0)
+                        c.drawString(x + bar_w + 2, text_y, txt)
 
     if all_day_in_grid and all_day_events:
         # slot_h = layout["hour_height"] * 0.25
@@ -884,12 +999,13 @@ def render_schedule_pdf(
             w = col_w
             h = slot_h
 
-            c.setFillColor(HexColor(meta.get("calendar_color", "#FFFFFF")))
-            c.roundRect(x, y-h, w, h, 4, stroke=0, fill=1)
-            c.setFillColor(css_color_to_hex(event_fill))
-            c.setStrokeColor(css_color_to_hex(event_stroke))
-            c.setLineWidth(0.33)
-            c.roundRect(x + bar_w, y - h, w - bar_w, h, 4, stroke=1, fill=1)
+            if draw_shapes:
+                c.setFillColor(HexColor(meta.get("calendar_color", "#FFFFFF")))
+                c.roundRect(x, y - h, w, h, 4, stroke=0, fill=1)
+                c.setFillColor(css_color_to_hex(event_fill))
+                c.setStrokeColor(css_color_to_hex(event_stroke))
+                c.setLineWidth(0.33)
+                c.roundRect(x + bar_w, y - h, w - bar_w, h, 4, stroke=1, fill=1)
 
             fs_title, title_offset = get_title_font_and_offset(15)
             fs_time,  time_offset  = get_time_font_and_offset(15)
@@ -905,18 +1021,18 @@ def render_schedule_pdf(
                 if label != title:
                     label = label.rstrip() + '…'
 
-            # draw text
-            y_top = y         # this is the top of our 15-min block
-            c.setFillColor(black)
-            # title line
-            text_y = y_top - title_offset
-            c.setFont("Montserrat-Regular", fs_title)
-            c.drawString(x + 4, text_y, label)
-            # optional time line
-            if show_time:
-                time_y = y_top - time_offset
-                c.setFont("Montserrat-Regular", fs_time)
-                c.drawRightString(x + w - 4, time_y, tl)
+            if draw_text:
+                y_top = y  # this is the top of our 15-min block
+                c.setFillColor(black)
+                # title line
+                text_y = y_top - title_offset
+                c.setFont("Montserrat-Regular", fs_title)
+                c.drawString(x + 4, text_y, label)
+                # optional time line
+                if show_time:
+                    time_y = y_top - time_offset
+                    c.setFont("Montserrat-Regular", fs_time)
+                    c.drawRightString(x + w - 4, time_y, tl)
 
     now = datetime.now(tz_local)
     footer = settings.FOOTER
@@ -928,7 +1044,7 @@ def render_schedule_pdf(
             footer_text = now.strftime("Updated: %Y-%m-%d %I:%M %p %Z")
     else:
         footer_text = footer
-    if footer != "disabled":
+    if footer != "disabled" and draw_text:
         c.setFont("Montserrat-Light", 6)
         c.setFillColor(css_color_to_hex(settings.FOOTER_COLOR))
         c.drawCentredString(width/2, page_bottom, footer_text)
@@ -947,7 +1063,8 @@ def export_pdf_to_png(pdf_path: str,
                       date_list: list,
                       cover: bool,
                       output_dir: str = None,
-                      dpi: int = 150):
+                      dpi: int = 150,
+                      transparent: bool = False):
     """
     Calls Poppler's pdftocairo to rasterize each page of `pdf_path` to PNG.
     Output files:
@@ -968,6 +1085,8 @@ def export_pdf_to_png(pdf_path: str,
         "-png",
         "-r", str(dpi),
     ]
+    if transparent:
+        args.append("-transp")
     if settings.MONOCHROME:
         logger.debug("Drawing in monochrome.")
         args.append("-mono")

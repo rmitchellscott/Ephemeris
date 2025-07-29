@@ -207,6 +207,8 @@ DOC_ANTIALIAS=false
 | APP_OUTPUT_FORMAT   | pdf                      | pdf, png, both         | Output format for the generated schedule.                           |
 | APP_OUTPUT_PDF_PATH | output/ephemeris.pdf     | reports/schedule.pdf   | Path and name for rendered output file.                             |
 | APP_OUTPUT_PNG_DIR  | output/png               | reports/images         | Directory for rendered output PNG files, one per day.               |
+| APP_OUTPUT_BG_PNG_DIR | output/png_background    | reports/bg_images       | Directory for background-only PNG files when DOC_SEPARATE_TEXT is enabled. |
+| APP_OUTPUT_TEXT_PNG_DIR | output/png_text          | reports/text_images     | Directory for text-only PNG files when DOC_SEPARATE_TEXT is enabled. |
 | APP_FORCE_REFRESH   | false                    | true, false            | Skip the changed events check and always render a document for each run. |
 | APP_FILTER_LIST     | cancelled,canceled       | canceled,removed       | Comma-separated list of substrings which, if found in an event’s title or status, will drop that event. |
 | APP_POST_HOOK       | (not set)                | rsync output/ user@server:/path/ | Command to execute after successful document generation. |
@@ -247,6 +249,7 @@ DOC_ANTIALIAS=false
 | DOC_MARGIN_TOP              | 9                        | 12                      | Top page margin in points (1pt = 1/72in).                                            |
 | DOC_MARGIN_BOTTOM           | 6                        | 12                      | Bottom page margin in points (1pt = 1/72in).                                         |
 | DOC_GRID_BOTTOM_PADDING     | 9                        | 12                      | Buffer between the bottom of the grid and the bottom margin in points (1pt = 1/72in). Useful for having a footer. |
+| DOC_SEPARATE_TEXT           | false                    | true, false         | When true, Ephemeris creates text-only and background-only PNG files. |
 
 ## License
 
