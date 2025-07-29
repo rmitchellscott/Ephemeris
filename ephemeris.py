@@ -149,6 +149,8 @@ def main():
             all_day_in_grid=settings.ALLDAY_IN_GRID,
             valid_dates=date_list,
             canvas_obj=c,
+            draw_text=True,
+            draw_shapes=True,
         )
         if settings.SEPARATE_TEXT:
             render_schedule_pdf(

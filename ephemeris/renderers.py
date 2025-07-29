@@ -654,13 +654,11 @@ def render_schedule_pdf(
         logger.log("VISUAL","Event: '{}' ({} min)", title, int(duration_minutes))
         logger.log("VISUAL","        Size: box_x: {x:.2f} | box_width: {w:.2f} | box_height: {h:.2f}", title, x=box_x, w=box_width, h=box_height)
 
-        if draw_text:
-            font_size, y_offset = get_title_font_and_offset(duration_minutes)
-            c.setFont("Montserrat-Regular", font_size)
-            # Prepare labels (moved above ellipsizing)
-            time_label = f"{fmt_time(start)} - {fmt_time(end)}"
-            title_font_size, title_y_offset = get_title_font_and_offset((end_eff - start_eff).total_seconds()/60)
-            time_font_size,  time_y_offset  = get_time_font_and_offset((end_eff - start_eff).total_seconds()/60)
+        # Calculate font sizes and labels needed for layout calculations
+        font_size, y_offset = get_title_font_and_offset(duration_minutes)
+        time_label = f"{fmt_time(start)} - {fmt_time(end)}"
+        title_font_size, title_y_offset = get_title_font_and_offset((end_eff - start_eff).total_seconds()/60)
+        time_font_size,  time_y_offset  = get_time_font_and_offset((end_eff - start_eff).total_seconds()/60)
 
         # Decide hide/move flags for time before ellipsizing
         has_direct_above = False
@@ -730,50 +728,11 @@ def render_schedule_pdf(
                 display_title = display_title.rstrip() + "..."
 
             # Draw title
-            if draw_text:
-                y_text = y_start - title_y_offset
-                c.drawString(box_x + 2 + text_padding, y_text, display_title)
-            font_size, y_offset = get_time_font_and_offset(duration_minutes)
             c.setFont("Montserrat-Regular", font_size)
-            y_text = y_start - y_offset
-            time_label = f"{fmt_time(start)} - {fmt_time(end)}"
-            if draw_text:
-                # 1) Find a "directly above" event in any higher layer
-                has_direct_above = False
-                above_event = None
-                min_layer_diff = float("inf")
-                min_delta = None
-                for other in events:
-                    if other["layer_index"] <= event["layer_index"]:
-                        continue
-                    if start_eff < other["end"] and other["start"] < end_eff:
-                        delta = (other["start"] - start_eff).total_seconds()
-                        if delta < 30 * 60:
-                            layer_diff = other["layer_index"] - event["layer_index"]
-                            if layer_diff < min_layer_diff or (
-                                layer_diff == min_layer_diff and (min_delta is None or abs(delta) < min_delta)
-                            ):
-                                has_direct_above = True
-                                above_event = other
-                                min_layer_diff = layer_diff
-                                min_delta = abs(delta)
-                # detect if title is too wide for inline (and event ≥ 60 min)
-                raw_title_w = c.stringWidth(title, "Montserrat-Regular", title_font_size)
-                inline_space = (
-                    box_width
-                    - 4
-                    - 2 * text_padding
-                    - c.stringWidth(time_label, "Montserrat-Regular", time_font_size)
-                )
-                should_move_for_title = (
-                    duration_minutes >= 60
-                    and raw_title_w > inline_space
-                )
-                # 2) Print & draw
-                hide_time = has_direct_above and duration_minutes < 60
-                move_time = (has_direct_above and duration_minutes >= 60) or should_move_for_title
-
-                c.setFont("Montserrat-Regular", time_font_size)
+            y_text = y_start - title_y_offset
+            c.drawString(box_x + 2 + text_padding, y_text, display_title)
+            
+            c.setFont("Montserrat-Regular", time_font_size)
 
                 # Shift time horizontally if we have an overlapping event, but space to move it to
                 horizontal_shift = False
