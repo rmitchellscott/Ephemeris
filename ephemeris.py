@@ -54,7 +54,7 @@ def main():
         c_bg = c_text = None
 
     # 5) Load config, metadata, and events
-    config = load_config()
+    config = load_config(settings.CONFIG_PATH)
     meta   = load_meta()
     raw_events = load_raw_events(config["calendars"])
 
