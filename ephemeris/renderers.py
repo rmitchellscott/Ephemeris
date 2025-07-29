@@ -655,7 +655,6 @@ def render_schedule_pdf(
         logger.log("VISUAL","        Size: box_x: {x:.2f} | box_width: {w:.2f} | box_height: {h:.2f}", title, x=box_x, w=box_width, h=box_height)
 
         # Calculate font sizes and labels needed for layout calculations
-        font_size, y_offset = get_title_font_and_offset(duration_minutes)
         time_label = f"{fmt_time(start)} - {fmt_time(end)}"
         title_font_size, title_y_offset = get_title_font_and_offset((end_eff - start_eff).total_seconds()/60)
         time_font_size,  time_y_offset  = get_time_font_and_offset((end_eff - start_eff).total_seconds()/60)
@@ -728,7 +727,7 @@ def render_schedule_pdf(
                 display_title = display_title.rstrip() + "..."
 
             # Draw title
-            c.setFont("Montserrat-Regular", font_size)
+            c.setFont("Montserrat-Regular", title_font_size)
             c.setFillGray(0)
             y_text = y_start - title_y_offset
             c.drawString(box_x + 2 + text_padding, y_text, display_title)
@@ -769,7 +768,7 @@ def render_schedule_pdf(
                 other_w = total_width * above_event["width_frac"]
                 other_x = layout["grid_right"] - other_w
                 x_time = other_x - text_padding
-                y_time = y_start - y_offset
+                y_time = y_start - time_y_offset
                 c.drawRightString(x_time, y_time, time_label)
             elif hide_time:
                 logger.opt(colors=True).log(
@@ -802,7 +801,7 @@ def render_schedule_pdf(
                     title,
                     int(duration_minutes),
                 )
-                y_time = y_start - y_offset
+                y_time = y_start - time_y_offset
                 c.drawRightString(box_x + box_width - text_padding, y_time, time_label)
 
     bar_w          = 2
