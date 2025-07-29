@@ -4,6 +4,6 @@ loguru==0.7.3
 pypdf==5.7.0
 pytz==2025.2
 PyYAML==6.0.2
-reportlab==4.4.2
+reportlab==4.4.3
 requests==2.32.4
 webcolors==24.11.1
