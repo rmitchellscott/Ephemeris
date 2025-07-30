@@ -669,16 +669,17 @@ def render_schedule_pdf(
                 continue
             if not (start_eff < other["end"] and other["start"] < end_eff):
                 continue
-            delta = abs((other["start"] - start_eff).total_seconds())
-            if delta <= 30 * 60:
+            delta = (other["start"] - start_eff).total_seconds()
+            if delta < 30 * 60:
                 layer_diff = other["layer_index"] - event["layer_index"]
+                abs_delta = abs(delta)
                 if layer_diff < min_layer_diff or (
-                    layer_diff == min_layer_diff and (min_delta is None or delta < min_delta)
+                    layer_diff == min_layer_diff and (min_delta is None or abs_delta < min_delta)
                 ):
                     has_direct_above = True
                     above_event = other
                     min_layer_diff = layer_diff
-                    min_delta = delta
+                    min_delta = abs_delta
         if draw_text:
             raw_title_w = c.stringWidth(title, "Montserrat-Regular", title_font_size)
             inline_space = (
