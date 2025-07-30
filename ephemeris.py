@@ -80,7 +80,7 @@ def main():
     override_map = build_override_map(raw_events)
 
     counts = Counter(cal_name for _, _, _, cal_name in raw_events)
-    logger.debug("Event count by calender:")
+    logger.debug("Event count by calendar:")
     for cal_name, cnt in counts.items():
         logger.debug("   • {}: {} events", cal_name, cnt)
 
