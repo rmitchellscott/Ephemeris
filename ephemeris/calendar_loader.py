@@ -100,7 +100,7 @@ def load_raw_events(sources: list[dict]) -> list[tuple]:
                 cal = parse_calendar(raw)
                 all_events.extend(extract_raw_events(cal, color, name))
             continue
-        logger.debug("Fetching calender {} from {}...", name, source)
+        logger.debug("Fetching calendar {} from {}...", name, source)
         raw = download_calendar(source)
         cal = parse_calendar(raw)
         all_events.extend(extract_raw_events(cal, color, name))
