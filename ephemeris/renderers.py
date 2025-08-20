@@ -13,7 +13,6 @@ from reportlab.lib.units import inch
 from reportlab.lib.colors import HexColor, black, white
 from reportlab.pdfbase import pdfmetrics
 from reportlab.lib.utils import ImageReader
-from pypdf import PdfMerger
 
 
 
