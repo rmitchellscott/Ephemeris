@@ -1,6 +1,8 @@
 from datetime import datetime, date, time
 from tempfile import NamedTemporaryFile
+import asyncio
 
+import aiohttp
 import requests
 import os
 from icalendar import Calendar as iCal
@@ -10,9 +12,18 @@ from loguru import logger
 import ephemeris.settings as settings
 
 
+async def download_calendar_async(session: aiohttp.ClientSession, source: str) -> bytes:
+    """
+    Fetch an ICS calendar from a URL using aiohttp session.
+    """
+    async with session.get(source) as resp:
+        resp.raise_for_status()
+        return await resp.read()
+
+
 def download_calendar(source: str) -> bytes:
     """
-    Fetch an ICS calendar from a URL or file path.
+    Fetch an ICS calendar from a URL or file path (synchronous version).
     """
     if source.startswith("http"):
         resp = requests.get(source)
@@ -77,15 +88,29 @@ def _dtstart_value(comp) -> datetime:
         raw = raw.replace(tzinfo=settings.TZ_LOCAL)
     return raw
 
-def load_raw_events(sources: list[dict]) -> list[tuple]:
+async def load_raw_events(sources: list[dict]) -> list[tuple]:
     """
     High-level loader: for each calendar entry, download, parse,
     and extract VEVENTs with VTIMEZONE support.
+    Downloads HTTP sources in parallel for better performance.
     """
     all_events = []
     names = [entry.get("name", "<unknown>") for entry in sources]
     logger.debug("Loading {} calendars: {}", len(names), names)
+    
+    # Separate HTTP sources from directory/file sources
+    http_sources = []
+    local_sources = []
+    
     for entry in sources:
+        source = entry.get("source")
+        if source and source.startswith("http"):
+            http_sources.append(entry)
+        else:
+            local_sources.append(entry)
+    
+    # Process local sources synchronously (directories and files)
+    for entry in local_sources:
         name = entry.get("name")
         color = entry.get("color", "black")
         source = entry.get("source")
@@ -100,14 +125,44 @@ def load_raw_events(sources: list[dict]) -> list[tuple]:
                 cal = parse_calendar(raw)
                 all_events.extend(extract_raw_events(cal, color, name))
             continue
-        logger.debug("Fetching calendar {} from {}...", name, source)
+        logger.debug("Fetching local calendar {} from {}...", name, source)
         raw = download_calendar(source)
         cal = parse_calendar(raw)
         all_events.extend(extract_raw_events(cal, color, name))
-
+    
+    # Process HTTP sources in parallel
+    if http_sources:
+        async with aiohttp.ClientSession() as session:
+            tasks = []
+            for entry in http_sources:
+                name = entry.get("name")
+                color = entry.get("color", "black")
+                source = entry.get("source")
+                logger.debug("Queuing HTTP calendar {} from {}...", name, source)
+                task = _fetch_and_process_http_calendar(session, source, color, name)
+                tasks.append(task)
+            
+            # Wait for all HTTP downloads to complete
+            http_results = await asyncio.gather(*tasks, return_exceptions=True)
+            
+            # Process results and handle any exceptions
+            for i, result in enumerate(http_results):
+                if isinstance(result, Exception):
+                    logger.error("Failed to fetch calendar {}: {}", http_sources[i].get("name"), result)
+                    continue
+                all_events.extend(result)
 
     # Sort by dtstart, normalized to timezone-aware datetimes
     return sorted(
         all_events,
         key=lambda x: _dtstart_value(x[0])
     )
+
+
+async def _fetch_and_process_http_calendar(session: aiohttp.ClientSession, source: str, color: str, name: str) -> list[tuple]:
+    """
+    Helper function to fetch and process a single HTTP calendar.
+    """
+    raw = await download_calendar_async(session, source)
+    cal = parse_calendar(raw)
+    return extract_raw_events(cal, color, name)
