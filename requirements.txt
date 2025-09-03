@@ -1,4 +1,4 @@
-aiohttp==3.11.10
+aiohttp==3.12.14
 CairoSVG==2.8.2
 icalendar==6.3.1
 loguru==0.7.3
