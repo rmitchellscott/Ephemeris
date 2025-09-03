@@ -1,6 +1,7 @@
 import sys
 import os
 import subprocess
+import asyncio
 from datetime import datetime
 from collections import Counter, defaultdict
 
@@ -25,7 +26,7 @@ from ephemeris.renderers import render_cover, render_schedule_pdf, export_pdf_to
 from ephemeris.logger import configure_logging
 
 
-def main():
+async def main():
     # 0) Set up logs
     configure_logging()
     # 1) Initialize fonts once
@@ -55,7 +56,7 @@ def main():
     # 5) Load config, metadata, and events
     config = load_config(settings.CONFIG_PATH)
     meta   = load_meta()
-    raw_events = load_raw_events(config["calendars"])
+    raw_events = await load_raw_events(config["calendars"])
 
     # 6) Compute anchor & hash for change detection
     anchor    = f"{date_list[0].isoformat()}:{date_list[-1].isoformat()}"
@@ -243,4 +244,4 @@ def main():
             logger.error("Failed to execute post-hook: {}", e)
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())
