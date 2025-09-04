@@ -140,18 +140,22 @@ async def main():
 
         # render schedule
         tmp = f"/tmp/schedule_{d.isoformat()}.pdf"
-        render_schedule_pdf(
-            timed,
-            tmp,
-            d,
-            all_day_events=all_day,
-            tz_local=settings.TZ_LOCAL,
-            all_day_in_grid=settings.ALLDAY_IN_GRID,
-            valid_dates=date_list,
-            canvas_obj=c,
-            draw_text=True,
-            draw_shapes=True,
-        )
+        try:
+            render_schedule_pdf(
+                timed,
+                tmp,
+                d,
+                all_day_events=all_day,
+                tz_local=settings.TZ_LOCAL,
+                all_day_in_grid=settings.ALLDAY_IN_GRID,
+                valid_dates=date_list,
+                canvas_obj=c,
+                draw_text=True,
+                draw_shapes=True,
+            )
+        except Exception as e:
+            logger.error("⚠️ PDF rendering failed for {}: {}", d, e)
+            raise
         if settings.SEPARATE_TEXT:
             render_schedule_pdf(
                 timed,

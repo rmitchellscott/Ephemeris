@@ -88,6 +88,28 @@ def draw_mini_cal(
     draw_text=True,
     draw_shapes=True,
 ):
+    # Dimension validation - prevent infinite loops with tiny dimensions
+    cell_w = mini_w / 7
+    cell_h = 8
+    min_cell_width = 12  # Minimum viable cell width in points
+    min_font_size = 4    # Minimum ReportLab font size
+    
+    if cell_w < min_cell_width:
+        logger.warning("⚠️ Mini-calendar too small to render safely: cell width {:.2f} < {:.2f} points (mini_w={:.2f}). Skipping mini-calendar for {}-{:02d}.", 
+                      cell_w, min_cell_width, mini_w, year, month)
+        return  # Early return - skip rendering entirely
+    
+    if mini_w < 84:  # 12 * 7 = minimum total width  
+        logger.warning("⚠️ Mini-calendar width {:.2f} < 84 points minimum. Skipping mini-calendar for {}-{:02d}.", 
+                      mini_w, year, month)
+        return
+    
+    if mini_h < 20:  # Minimum height for month label + headers + at least one row
+        logger.warning("⚠️ Mini-calendar height {:.2f} < 20 points minimum. Skipping mini-calendar for {}-{:02d}.", 
+                      mini_h, year, month)  
+        return
+    
+    
     # Month label
     month_name = calendar.month_name[month]
     if draw_text:
@@ -399,13 +421,16 @@ def render_schedule_pdf(
       • each timed_event, stacked/ellipsized
       • footer
     """
+    
     # Determine effective start hour (shift back one if in-grid)
     eff_start = start_hour - 1 if all_day_in_grid else start_hour 
     
     width, height = get_page_size()
+    
     # if they passed in a canvas, draw onto that; otherwise make our own
     c = canvas_obj
     layout    = get_layout_config(width, height, eff_start, end_hour)
+    
     text_padding = layout["text_padding"]
     DRAW_ALL_DAY_BAND = settings.DRAW_ALL_DAY_BAND
     DRAW_MINICALS = settings.DRAW_MINICALS
@@ -424,6 +449,7 @@ def render_schedule_pdf(
     MINICAL_HEIGHT = settings.MINICAL_HEIGHT
     MINICAL_OFFSET = settings.MINICAL_OFFSET
     ALLDAY_FROM = settings.ALLDAY_FROM
+    
 
     # Link prep
     if valid_dates is not None:
@@ -474,6 +500,18 @@ def render_schedule_pdf(
     gap          = mini_block_gap
     total_w = mini_w + (0 if MINICAL_ONLY_CURRENT else mini_w + gap)
 
+    
+    # Pre-validate mini-calendar dimensions - disable if they won't render safely
+    min_cell_width = 12  # Same as in draw_mini_cal function
+    cell_w = mini_w / 7
+    
+    if DRAW_MINICALS and (cell_w < min_cell_width or mini_w < 84 or mini_h < 20):
+        logger.warning("⚠️ Mini-calendars disabled due to insufficient space: cell width {:.2f} points (need {:.2f}), mini_w={:.2f} (need 84), mini_h={:.2f} (need 20)", 
+                      cell_w, min_cell_width, mini_w, mini_h)
+        logger.warning("Page dimensions {}×{} points with current layout cannot safely render mini-calendars", width, height)
+        DRAW_MINICALS = False  # Dynamically disable for this render
+    elif DRAW_MINICALS:
+    
     if MINICAL_ALIGN == "left":
         x_start = page_left
     elif MINICAL_ALIGN == "grid":
@@ -484,33 +522,51 @@ def render_schedule_pdf(
         left_offset = MINICAL_OFFSET
         x_start     = page_right - total_w - left_offset
     y_cal = sep_y - element_pad - mini_h - (2 * mini_text_pad)
+    
 
     # All Day Events
     band_left = page_left if ALLDAY_FROM == "margin" else grid_left
+    
     if DRAW_MINICALS:
         band_right  = x_start - mini_block_gap
     else:
         band_right = page_right
+    
     band_width  = band_right - band_left
+    
+    # Check for problematic band width
+    if band_width <= 0:
+        logger.error("🚨 CRITICAL: All-day band width is {} <= 0! This will cause infinite loops!", band_width)
+        raise ValueError(f"All-day events band width {band_width} <= 0 - layout impossible")
+    elif band_width < 50:
+        logger.warning("⚠️ WARNING: All-day band width is very narrow: {} points", band_width)
+    
     band_bottom = y_cal + element_pad
     band_top    = y_cal + mini_h + 2*mini_text_pad
     band_height = band_top - band_bottom
+    
 
     # Label
     label_lines = ["All-Day", "Events"]
+    
     all_day_label_font_size = (band_height * 0.33) / (len(label_lines) * 1.2)
+    
     x_label = band_left + text_padding
 
     if DRAW_MINICALS:
         today = date_label
+        
         first_of_month = today.replace(day=1)
+        
         if first_of_month.month == 12:
             next_month = first_of_month.replace(year=first_of_month.year+1, month=1)
         else:
             next_month = first_of_month.replace(month=first_of_month.month+1)
 
         cal = calendar.Calendar(firstweekday=6)
+        
         weeks1 = cal.monthdayscalendar(first_of_month.year, first_of_month.month)
+        
         weeks2 = cal.monthdayscalendar(next_month.year, next_month.month)
 
         draw_mini_cal(

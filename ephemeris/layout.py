@@ -59,6 +59,36 @@ def get_layout_config(width, height, start_hour=6, end_hour=17):
     hours_shown  = end_hour - start_hour
     available_h  = grid_top - grid_bottom
     hour_height  = available_h / hours_shown
+    
+    # Check for problematic values
+    if available_h <= 0:
+        logger.error("⚠️ LAYOUT ERROR: available_h={} is <= 0! This will cause rendering issues.", available_h)
+    if hour_height <= 0:
+        logger.error("⚠️ LAYOUT ERROR: hour_height={} is <= 0! This will cause rendering issues.", hour_height)
+    if grid_right - grid_left <= 0:
+        logger.error("⚠️ LAYOUT ERROR: Grid width={} is <= 0! This will cause rendering issues.", grid_right - grid_left)
+    
+    usable_width = grid_right - grid_left
+    
+    # Add hard bounds checking to prevent infinite loops
+    MIN_USABLE_WIDTH = 100  # Minimum 100 points width
+    MIN_AVAILABLE_HEIGHT = 50  # Minimum 50 points height
+    MIN_HOUR_HEIGHT = 2  # Minimum 2 points per hour
+    
+    if usable_width < MIN_USABLE_WIDTH:
+        logger.error("⚠️ FATAL: Usable width {} < minimum {} points. Layout impossible!", 
+                    usable_width, MIN_USABLE_WIDTH)
+        raise ValueError(f"Page too narrow: usable width {usable_width} < {MIN_USABLE_WIDTH} points")
+    
+    if available_h < MIN_AVAILABLE_HEIGHT:
+        logger.error("⚠️ FATAL: Available height {} < minimum {} points. Layout impossible!", 
+                    available_h, MIN_AVAILABLE_HEIGHT) 
+        raise ValueError(f"Page too short: available height {available_h} < {MIN_AVAILABLE_HEIGHT} points")
+    
+    if hour_height < MIN_HOUR_HEIGHT:
+        logger.error("⚠️ FATAL: Hour height {} < minimum {} points. Layout impossible!", 
+                    hour_height, MIN_HOUR_HEIGHT)
+        raise ValueError(f"Hour height too small: {hour_height} < {MIN_HOUR_HEIGHT} points")
 
     return {
         "grid_top":         grid_top,
