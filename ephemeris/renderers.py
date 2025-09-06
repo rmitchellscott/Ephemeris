@@ -479,10 +479,14 @@ def render_schedule_pdf(
 
     # Header/title
     title_y = page_top - heading_ascent  # Pin ascenders to page_top
+    
     if draw_text:
         c.setFillGray(0)
+        
         c.setFont("Montserrat-Bold", heading_size)
-        c.drawCentredString(width/2, title_y, date_label.strftime('%A, %B %d, %Y'))
+        
+        title_text = date_label.strftime('%A, %B %d, %Y')
+        c.drawCentredString(width/2, title_y, title_text)
 
     # Line under title
     sep_y = title_y - element_pad
@@ -505,23 +509,24 @@ def render_schedule_pdf(
     min_cell_width = 12  # Same as in draw_mini_cal function
     cell_w = mini_w / 7
     
+    # Calculate y_cal position (always needed for all-day events band)
+    y_cal = sep_y - element_pad - mini_h - (2 * mini_text_pad)
+    
     if DRAW_MINICALS and (cell_w < min_cell_width or mini_w < 84 or mini_h < 20):
         logger.warning("⚠️ Mini-calendars disabled due to insufficient space: cell width {:.2f} points (need {:.2f}), mini_w={:.2f} (need 84), mini_h={:.2f} (need 20)", 
                       cell_w, min_cell_width, mini_w, mini_h)
         logger.warning("Page dimensions {}×{} points with current layout cannot safely render mini-calendars", width, height)
         DRAW_MINICALS = False  # Dynamically disable for this render
     elif DRAW_MINICALS:
-    
-    if MINICAL_ALIGN == "left":
-        x_start = page_left
-    elif MINICAL_ALIGN == "grid":
-        x_start = grid_left
-    elif MINICAL_ALIGN == "center":
-        x_start = page_left + ((page_right - page_left) - total_w) / 2
-    else:  # right
-        left_offset = MINICAL_OFFSET
-        x_start     = page_right - total_w - left_offset
-    y_cal = sep_y - element_pad - mini_h - (2 * mini_text_pad)
+        if MINICAL_ALIGN == "left":
+            x_start = page_left
+        elif MINICAL_ALIGN == "grid":
+            x_start = grid_left
+        elif MINICAL_ALIGN == "center":
+            x_start = page_left + ((page_right - page_left) - total_w) / 2
+        else:  # right
+            left_offset = MINICAL_OFFSET
+            x_start     = page_right - total_w - left_offset
     
 
     # All Day Events
@@ -1104,12 +1109,10 @@ def export_pdf_to_png(pdf_path: str,
     if transparent:
         args.append("-transp")
     if settings.MONOCHROME:
-        logger.debug("Drawing in monochrome.")
         args.append("-mono")
         args.append("-antialias")
         args.append("none")
     elif not settings.ANTIALIAS:
-        logger.debug("Drawing with anti-aliasing disabled.")
         args.append("-antialias")
         args.append("none")
     args.extend([

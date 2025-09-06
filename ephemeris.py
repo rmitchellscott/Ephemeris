@@ -4,6 +4,7 @@ import subprocess
 import asyncio
 from datetime import datetime
 from collections import Counter, defaultdict
+import time as time_module
 
 from loguru import logger
 from reportlab.pdfgen import canvas
