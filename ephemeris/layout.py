@@ -62,11 +62,11 @@ def get_layout_config(width, height, start_hour=6, end_hour=17):
     
     # Check for problematic values
     if available_h <= 0:
-        logger.error("⚠️ LAYOUT ERROR: available_h={} is <= 0! This will cause rendering issues.", available_h)
+        logger.error("LAYOUT ERROR: available_h={} is <= 0! This will cause rendering issues.", available_h)
     if hour_height <= 0:
-        logger.error("⚠️ LAYOUT ERROR: hour_height={} is <= 0! This will cause rendering issues.", hour_height)
+        logger.error("LAYOUT ERROR: hour_height={} is <= 0! This will cause rendering issues.", hour_height)
     if grid_right - grid_left <= 0:
-        logger.error("⚠️ LAYOUT ERROR: Grid width={} is <= 0! This will cause rendering issues.", grid_right - grid_left)
+        logger.error("LAYOUT ERROR: Grid width={} is <= 0! This will cause rendering issues.", grid_right - grid_left)
     
     usable_width = grid_right - grid_left
     
@@ -76,17 +76,17 @@ def get_layout_config(width, height, start_hour=6, end_hour=17):
     MIN_HOUR_HEIGHT = 2  # Minimum 2 points per hour
     
     if usable_width < MIN_USABLE_WIDTH:
-        logger.error("⚠️ FATAL: Usable width {} < minimum {} points. Layout impossible!", 
+        logger.error("FATAL: Usable width {} < minimum {} points. Layout impossible!", 
                     usable_width, MIN_USABLE_WIDTH)
         raise ValueError(f"Page too narrow: usable width {usable_width} < {MIN_USABLE_WIDTH} points")
     
     if available_h < MIN_AVAILABLE_HEIGHT:
-        logger.error("⚠️ FATAL: Available height {} < minimum {} points. Layout impossible!", 
+        logger.error("FATAL: Available height {} < minimum {} points. Layout impossible!", 
                     available_h, MIN_AVAILABLE_HEIGHT) 
         raise ValueError(f"Page too short: available height {available_h} < {MIN_AVAILABLE_HEIGHT} points")
     
     if hour_height < MIN_HOUR_HEIGHT:
-        logger.error("⚠️ FATAL: Hour height {} < minimum {} points. Layout impossible!", 
+        logger.error("FATAL: Hour height {} < minimum {} points. Layout impossible!", 
                     hour_height, MIN_HOUR_HEIGHT)
         raise ValueError(f"Hour height too small: {hour_height} < {MIN_HOUR_HEIGHT} points")
 
@@ -132,6 +132,6 @@ def get_page_size():
         height_pt = pixels_to_points(px_height, dpi=env_dpi)
         return width_pt, height_pt
     except Exception as e:
-        msg = f"⚠️ Invalid PDF_PAGE_SIZE or PDF_DPI: {e}. Using letter as the fallback size."
+        msg = f"Invalid PDF_PAGE_SIZE or PDF_DPI: {e}. Using letter as the fallback size."
         logger.error("{}",msg)
         return letter

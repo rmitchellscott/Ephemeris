@@ -155,7 +155,7 @@ async def main():
                 draw_shapes=True,
             )
         except Exception as e:
-            logger.error("⚠️ PDF rendering failed for {}: {}", d, e)
+            logger.error("PDF rendering failed for {}: {}", d, e)
             raise
         if settings.SEPARATE_TEXT:
             render_schedule_pdf(

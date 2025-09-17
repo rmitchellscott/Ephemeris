@@ -91,21 +91,21 @@ def draw_mini_cal(
     # Dimension validation - prevent infinite loops with tiny dimensions
     cell_w = mini_w / 7
     cell_h = 8
-    min_cell_width = 12  # Minimum viable cell width in points
+    min_cell_width = 8  # Minimum viable cell width in points
     min_font_size = 4    # Minimum ReportLab font size
     
     if cell_w < min_cell_width:
-        logger.warning("⚠️ Mini-calendar too small to render safely: cell width {:.2f} < {:.2f} points (mini_w={:.2f}). Skipping mini-calendar for {}-{:02d}.", 
+        logger.warning("Mini-calendar too small to render safely: cell width {:.2f} < {:.2f} points (mini_w={:.2f}). Skipping mini-calendar for {}-{:02d}.", 
                       cell_w, min_cell_width, mini_w, year, month)
         return  # Early return - skip rendering entirely
     
-    if mini_w < 84:  # 12 * 7 = minimum total width  
-        logger.warning("⚠️ Mini-calendar width {:.2f} < 84 points minimum. Skipping mini-calendar for {}-{:02d}.", 
+    if mini_w < 56:  # 8 * 7 = minimum total width  
+        logger.warning("Mini-calendar width {:.2f} < 56 points minimum. Skipping mini-calendar for {}-{:02d}.", 
                       mini_w, year, month)
         return
     
-    if mini_h < 20:  # Minimum height for month label + headers + at least one row
-        logger.warning("⚠️ Mini-calendar height {:.2f} < 20 points minimum. Skipping mini-calendar for {}-{:02d}.", 
+    if mini_h < 15:  # Minimum height for month label + headers + at least one row
+        logger.warning("Mini-calendar height {:.2f} < 15 points minimum. Skipping mini-calendar for {}-{:02d}.", 
                       mini_h, year, month)  
         return
     
@@ -506,14 +506,14 @@ def render_schedule_pdf(
 
     
     # Pre-validate mini-calendar dimensions - disable if they won't render safely
-    min_cell_width = 12  # Same as in draw_mini_cal function
+    min_cell_width = 8  # Same as in draw_mini_cal function
     cell_w = mini_w / 7
     
     # Calculate y_cal position (always needed for all-day events band)
     y_cal = sep_y - element_pad - mini_h - (2 * mini_text_pad)
     
-    if DRAW_MINICALS and (cell_w < min_cell_width or mini_w < 84 or mini_h < 20):
-        logger.warning("⚠️ Mini-calendars disabled due to insufficient space: cell width {:.2f} points (need {:.2f}), mini_w={:.2f} (need 84), mini_h={:.2f} (need 20)", 
+    if DRAW_MINICALS and (cell_w < min_cell_width or mini_w < 56 or mini_h < 15):
+        logger.warning("Mini-calendars disabled due to insufficient space: cell width {:.2f} points (need {:.2f}), mini_w={:.2f} (need 56), mini_h={:.2f} (need 15)", 
                       cell_w, min_cell_width, mini_w, mini_h)
         logger.warning("Page dimensions {}×{} points with current layout cannot safely render mini-calendars", width, height)
         DRAW_MINICALS = False  # Dynamically disable for this render
@@ -541,10 +541,10 @@ def render_schedule_pdf(
     
     # Check for problematic band width
     if band_width <= 0:
-        logger.error("🚨 CRITICAL: All-day band width is {} <= 0! This will cause infinite loops!", band_width)
+        logger.error("CRITICAL: All-day band width is {} <= 0! This will cause infinite loops!", band_width)
         raise ValueError(f"All-day events band width {band_width} <= 0 - layout impossible")
     elif band_width < 50:
-        logger.warning("⚠️ WARNING: All-day band width is very narrow: {} points", band_width)
+        logger.warning("WARNING: All-day band width is very narrow: {} points", band_width)
     
     band_bottom = y_cal + element_pad
     band_top    = y_cal + mini_h + 2*mini_text_pad
