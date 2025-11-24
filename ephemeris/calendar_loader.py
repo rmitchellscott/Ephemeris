@@ -51,13 +51,16 @@ def build_tz_factory(cal: iCal) -> dateutil_tz.tzical | None:
 
     with NamedTemporaryFile(mode="wb", suffix=".ics", delete=False) as tf:
         for comp in vtz_blocks:
-            # strip unsupported X- properties
             for prop in list(comp.keys()):
                 if prop.upper().startswith("X-"):
                     comp.pop(prop, None)
             tf.write(comp.to_ical())
         tf.flush()
-        return dateutil_tz.tzical(tf.name)
+        try:
+            return dateutil_tz.tzical(tf.name)
+        except ValueError as e:
+            logger.warning("Invalid VTIMEZONE definition, ignoring: {}", e)
+            return None
 
 
 def extract_raw_events(cal: iCal, color: str, name: str) -> list[tuple]:

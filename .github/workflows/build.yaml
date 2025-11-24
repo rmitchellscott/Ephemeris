@@ -115,7 +115,7 @@ jobs:
           target: ${{ matrix.variant == 'plain' && 'ephemeris' || 'ephemeris-rmapi' }}
           build-args: ${{ matrix.variant == 'rmapi' && format('RMAPI_VERSION={0}', env.RMAPI_VERSION) || '' }}
           pull: true
-          push: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') }}
+          push: true
           platforms: linux/amd64,linux/arm64/v8
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
