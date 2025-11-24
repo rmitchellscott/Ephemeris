@@ -212,7 +212,7 @@ def expand_event_for_day(
                 # Convert to local‐midnight
                 st = occ.astimezone(tz_local).replace(hour=0, minute=0, second=0, microsecond=0)
                 en = st + timedelta(days=1)
-                meta = {'uid': uid, 'calendar_color': color, 'all_day': True}
+                meta = {'uid': uid, 'calendar_color': color, 'all_day': True, 'location': str(comp.get('LOCATION', ''))}
                 instances.append((st, en, str(comp.get('SUMMARY','')), meta))
             return instances
 
@@ -220,7 +220,7 @@ def expand_event_for_day(
         if start_raw <= target_date < dtend_date:
             st = sod
             en = sod_next
-            meta = {'uid': uid, 'calendar_color': color, 'all_day': True}
+            meta = {'uid': uid, 'calendar_color': color, 'all_day': True, 'location': str(comp.get('LOCATION', ''))}
             return [(st, en, str(comp.get('SUMMARY','')), meta)]
         return []
 
@@ -277,7 +277,7 @@ def expand_event_for_day(
                 continue
             st = occ.astimezone(tz_local)
             en = (occ + (end0 - start)).astimezone(tz_local)
-            meta = {'uid': uid, 'calendar_color': color, 'all_day': False}
+            meta = {'uid': uid, 'calendar_color': color, 'all_day': False, 'location': str(comp.get('LOCATION', ''))}
             instances.append((st, en, str(comp.get('SUMMARY','')), meta))
 
     else:
@@ -297,19 +297,19 @@ def expand_event_for_day(
                     # First day: show actual start time to end of day
                     event_start = start
                     event_end = end if end.date() == target_date else sod_next
-                    meta = {'uid': uid, 'calendar_color': color, 'all_day': False}
+                    meta = {'uid': uid, 'calendar_color': color, 'all_day': False, 'location': str(comp.get('LOCATION', ''))}
                     instances.append((event_start, event_end, str(comp.get('SUMMARY','')), meta))
                 elif is_last_day:
                     # Last day: show start of day to actual end time
                     event_start = sod
                     event_end = end
-                    meta = {'uid': uid, 'calendar_color': color, 'all_day': False}
+                    meta = {'uid': uid, 'calendar_color': color, 'all_day': False, 'location': str(comp.get('LOCATION', ''))}
                     instances.append((event_start, event_end, str(comp.get('SUMMARY','')), meta))
                 elif is_middle_day:
                     # Middle day: convert to all-day event
                     event_start = sod
                     event_end = sod_next
-                    meta = {'uid': uid, 'calendar_color': color, 'all_day': True}
+                    meta = {'uid': uid, 'calendar_color': color, 'all_day': True, 'location': str(comp.get('LOCATION', ''))}
                     instances.append((event_start, event_end, str(comp.get('SUMMARY','')), meta))
 
     grid_start = sod.replace(hour=settings.START_HOUR)

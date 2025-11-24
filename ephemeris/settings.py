@@ -91,6 +91,10 @@ DRAW_ALL_DAY_BAND  = ALLDAY_MODE == "band"
 ALLDAY_IN_GRID     = ALLDAY_MODE == "in-grid"
 DRAW_ALL_DAY       = ALLDAY_MODE in ("band", "in-grid")
 
+SHOW_TIME = os.getenv("DOC_SHOW_TIME", "true").lower() in ("1", "true", "yes")
+SHOW_LOCATION = os.getenv("DOC_SHOW_LOCATION", "false").lower() in ("1", "true", "yes")
+FIRST_LINE = os.getenv("DOC_FIRST_LINE", "time").lower()
+
 # Color defaults
 MONOCHROME      = os.getenv("DOC_MONOCHROME", "false").lower() in ("1", "true", "yes")
 ANTIALIAS       = os.getenv("DOC_ANTIALIAS", "true").lower() in ("1", "true", "yes")

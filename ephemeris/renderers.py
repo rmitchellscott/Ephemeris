@@ -715,7 +715,10 @@ def render_schedule_pdf(
         logger.log("VISUAL","        Size: box_x: {x:.2f} | box_width: {w:.2f} | box_height: {h:.2f}", title, x=box_x, w=box_width, h=box_height)
 
         # Calculate font sizes and labels needed for layout calculations
-        time_label = f"{fmt_time(start)} - {fmt_time(end)}"
+        time_label = f"{fmt_time(start)} - {fmt_time(end)}" if settings.SHOW_TIME else ''
+        location = meta.get('location', '')
+        location_label = location if settings.SHOW_LOCATION else ''
+        time_first = settings.FIRST_LINE != 'location'
         title_font_size, title_y_offset = get_title_font_and_offset((end_eff - start_eff).total_seconds()/60)
         time_font_size,  time_y_offset  = get_time_font_and_offset((end_eff - start_eff).total_seconds()/60)
 
@@ -742,23 +745,26 @@ def render_schedule_pdf(
                     min_delta = abs_delta
         if draw_text:
             raw_title_w = c.stringWidth(title, "Montserrat-Regular", title_font_size)
+            # Always use time_label width for title truncation (location should never shrink title)
+            time_label_w = c.stringWidth(time_label, "Montserrat-Regular", time_font_size)
             inline_space = (
                 box_width
                 - 4
                 - 2 * text_padding
-                - c.stringWidth(time_label, "Montserrat-Regular", time_font_size)
+                - time_label_w
             )
 
             should_move_for_title = duration_minutes >= 60 and raw_title_w > inline_space
             hide_time = has_direct_above and duration_minutes < 60
             move_time = (has_direct_above and duration_minutes >= 60) or should_move_for_title
+            show_location_inline = duration_minutes >= 60 and location_label
+            show_location_moved = duration_minutes >= 90 and location_label
 
             # Ellipsize title:
             #   reserve space for the time if inline; but always avoid occlusion by a
             #   next-layer box whose start is within 30 min
             title_x_start = box_x + 4 + text_padding
-            time_reserve  = 0 if (hide_time or move_time) else \
-                            c.stringWidth(time_label, "Montserrat-Regular", time_font_size)
+            time_reserve = 0 if (hide_time or move_time) else time_label_w
             max_w_time    = box_width - 4 - 2 * text_padding - time_reserve
 
             # compute occlusion constraint regardless of hide/move
@@ -798,43 +804,55 @@ def render_schedule_pdf(
             # Shift time horizontally if we have an overlapping event, but space to move it to
             horizontal_shift = False
             if duration_minutes < 60 and has_direct_above:
-                # find X of the overlapping box's left edge
                 other_w = total_width * above_event["width_frac"]
                 other_x = layout["grid_right"] - other_w
-                # how many points from our left padding to that edge?
                 visible_space = (other_x - (box_x + 2 + text_padding))
-                # how much width do we need?
                 title_w = c.stringWidth(display_title, "Montserrat-Regular", title_font_size)
-                time_w  = c.stringWidth(time_label,    "Montserrat-Regular", time_font_size)
+                time_w = c.stringWidth(time_label, "Montserrat-Regular", time_font_size)
                 needed = title_w + time_w + text_padding
                 if needed <= visible_space:
                     horizontal_shift = True
 
-            # Handle edge case where moving the time would force it off the grid
+            # Handle edge case where moving the time label would force it off the grid
             if move_time:
-                # compute the would-be y_time for the moved label
                 y_title = y_start - title_y_offset
-                y_time  = y_title - (text_padding / 2) - time_y_offset
-                # if that y_time falls below grid_bottom, don't move it
-                if y_time < layout["grid_bottom"]:
+                y_time_moved = y_title - (text_padding / 2) - time_y_offset
+                if y_time_moved < layout["grid_bottom"]:
                     move_time = False
                     hide_time = True
+
+            # Helper to truncate location to fit available width
+            def truncate_location(loc, max_w):
+                if not loc or c.stringWidth(loc, "Montserrat-Regular", time_font_size) <= max_w:
+                    return loc
+                while loc and c.stringWidth(loc + "...", "Montserrat-Regular", time_font_size) > max_w:
+                    loc = loc[:-1]
+                return loc.rstrip() + "..." if loc else ""
+
             if horizontal_shift:
                 logger.opt(colors=True).log(
                     "VISUAL",
-                    "        <cyan>Moving time horizontally because overlapping event {} @ {}.</cyan>",
+                    "        <cyan>Moving label horizontally because overlapping event {} @ {}.</cyan>",
                     above_event["title"],
                     above_event["start"].strftime("%H:%M"),
                 )
                 other_w = total_width * above_event["width_frac"]
                 other_x = layout["grid_right"] - other_w
-                x_time = other_x - text_padding
-                y_time = y_start - time_y_offset
-                c.drawRightString(x_time, y_time, time_label)
+                x_shifted = other_x - text_padding
+                y_shifted = y_start - time_y_offset
+                if time_first:
+                    c.drawRightString(x_shifted, y_shifted, time_label)
+                elif location_label:
+                    avail_w = x_shifted - (box_x + 2 + text_padding) - c.stringWidth(display_title, "Montserrat-Regular", title_font_size) - text_padding
+                    display_location = truncate_location(location_label, avail_w)
+                    if display_location:
+                        c.drawRightString(x_shifted, y_shifted, display_location)
+                else:
+                    c.drawRightString(x_shifted, y_shifted, time_label)
             elif hide_time:
                 logger.opt(colors=True).log(
                     "VISUAL",
-                    "        <yellow>Hiding time because overlapping event {} @ {}.</yellow>",
+                    "        <yellow>Hiding time label because overlapping event {} @ {}.</yellow>",
                     above_event["title"],
                     above_event["start"].strftime("%H:%M"),
                 )
@@ -842,28 +860,69 @@ def render_schedule_pdf(
                 if should_move_for_title:
                     logger.opt(colors=True).log(
                         "VISUAL",
-                        "        <cyan>Moving time because the title is too long.</cyan>",
+                        "        <cyan>Moving labels because the title is too long.</cyan>",
                     )
                 else:
                     logger.opt(colors=True).log(
                         "VISUAL",
-                        "        <cyan>Moving time because overlapping event {} @ {}.</cyan>",
+                        "        <cyan>Moving labels because overlapping event {} @ {}.</cyan>",
                         above_event["title"],
                         above_event["start"].strftime("%H:%M"),
                     )
                 y_title = y_start - title_y_offset
-                y_time = y_title - (text_padding / 2) - time_y_offset
-                x_time = box_x + 2 + text_padding
-                c.drawString(x_time, y_time, time_label)
+                y_line2 = y_title - (text_padding / 2) - time_y_offset
+                x_moved = box_x + 2 + text_padding
+                max_label_w = max(0, max_w_occ)
+                if time_first:
+                    c.drawString(x_moved, y_line2, time_label)
+                    if show_location_moved:
+                        y_line3 = y_line2 - (text_padding / 2) - time_y_offset
+                        if y_line3 >= layout["grid_bottom"]:
+                            display_location = truncate_location(location_label, max_label_w)
+                            c.drawString(x_moved, y_line3, display_location)
+                else:
+                    if location_label:
+                        display_location = truncate_location(location_label, max_label_w)
+                        if display_location:
+                            c.drawString(x_moved, y_line2, display_location)
+                        if show_location_moved:
+                            y_line3 = y_line2 - (text_padding / 2) - time_y_offset
+                            if y_line3 >= layout["grid_bottom"]:
+                                c.drawString(x_moved, y_line3, time_label)
+                    else:
+                        c.drawString(x_moved, y_line2, time_label)
             else:
                 logger.log(
                     "VISUAL",
-                    "        Drawing inline time; no overlapping event detected.",
+                    "        Drawing inline labels; no overlapping event detected.",
                     title,
                     int(duration_minutes),
                 )
-                y_time = y_start - time_y_offset
-                c.drawRightString(box_x + box_width - text_padding, y_time, time_label)
+                y_line1 = y_start - time_y_offset
+                if time_first:
+                    c.drawRightString(box_x + box_width - text_padding, y_line1, time_label)
+                    if show_location_inline:
+                        y_title = y_start - title_y_offset
+                        y_line2 = y_title - (text_padding / 2) - time_y_offset
+                        if y_line2 >= layout["grid_bottom"]:
+                            x_location = box_x + 2 + text_padding
+                            max_location_w = max(0, max_w_occ)
+                            display_location = truncate_location(location_label, max_location_w)
+                            c.drawString(x_location, y_line2, display_location)
+                else:
+                    if location_label:
+                        title_actual_w = c.stringWidth(display_title, "Montserrat-Regular", title_font_size)
+                        avail_for_location = box_width - 4 - 2 * text_padding - title_actual_w - text_padding
+                        display_location = truncate_location(location_label, avail_for_location)
+                        if display_location:
+                            c.drawRightString(box_x + box_width - text_padding, y_line1, display_location)
+                        if show_location_inline:
+                            y_title = y_start - title_y_offset
+                            y_line2 = y_title - (text_padding / 2) - time_y_offset
+                            if y_line2 >= layout["grid_bottom"]:
+                                c.drawString(box_x + 2 + text_padding, y_line2, time_label)
+                    else:
+                        c.drawRightString(box_x + box_width - text_padding, y_line1, time_label)
 
     bar_w          = 2
     
@@ -968,21 +1027,30 @@ def render_schedule_pdf(
                 inner_w = (w - bar_w) - 4
                 txt     = title
 
-                if not (st.time() == time.min and en.time() == time.min):
-                    time_label = meta.get('time_label', f"{fmt_time(st)}–{fmt_time(en)}")
-                    while c.stringWidth(txt + "...", "Montserrat-Regular", title_fs) + c.stringWidth(time_label, "Montserrat-Regular", time_fs) + text_padding > inner_w:
+                has_time = not (st.time() == time.min and en.time() == time.min)
+                time_label = meta.get('time_label', f"{fmt_time(st)}–{fmt_time(en)}") if (has_time and settings.SHOW_TIME) else ''
+                location_label = meta.get('location', '') if settings.SHOW_LOCATION else ''
+                time_first = settings.FIRST_LINE != 'location'
+
+                if time_first:
+                    right_label = time_label if time_label else location_label
+                else:
+                    right_label = location_label if location_label else time_label
+
+                if right_label:
+                    while c.stringWidth(txt + "...", "Montserrat-Regular", title_fs) + c.stringWidth(right_label, "Montserrat-Regular", time_fs) + text_padding > inner_w:
                         txt = txt[:-1]
                     if txt != title:
                         txt = txt.rstrip() + "..."
 
                     if draw_text:
                         text_y = y + h - title_baseline
-                        time_y = y + h - time_baseline
+                        label_y = y + h - time_baseline
                         c.setFillGray(0)
                         c.drawString(x + bar_w + 2, text_y, txt)
 
                         c.setFont("Montserrat-Regular", time_fs)
-                        c.drawRightString(x + w - text_padding, time_y, time_label)
+                        c.drawRightString(x + w - text_padding, label_y, right_label)
                 else:
                     while c.stringWidth(txt + "...", "Montserrat-Regular", title_fs) > inner_w:
                         txt = txt[:-1]
@@ -1031,29 +1099,33 @@ def render_schedule_pdf(
             fs_title, title_offset = get_title_font_and_offset(15)
             fs_time,  time_offset  = get_time_font_and_offset(15)
 
-            # only show a time-label if not true 00:00–00:00
-            show_time = not (st.time() == time.min and en.time() == time.min)
-            label = title
-            if show_time:
-                tl = f"{fmt_time(st)}–{fmt_time(en)}"
-                # truncate title to fit
-                while c.stringWidth(label + '…', "Montserrat-Regular", h*0.5) + c.stringWidth(tl, "Montserrat-Regular", h*0.3) + 4 > w:
-                    label = label[:-1]
-                if label != title:
-                    label = label.rstrip() + '…'
+            has_time = not (st.time() == time.min and en.time() == time.min)
+            time_label = f"{fmt_time(st)}–{fmt_time(en)}" if (has_time and settings.SHOW_TIME) else ''
+            location_label = meta.get('location', '') if settings.SHOW_LOCATION else ''
+            time_first = settings.FIRST_LINE != 'location'
+
+            if time_first:
+                right_label = time_label if time_label else location_label
+            else:
+                right_label = location_label if location_label else time_label
+
+            display_title = title
+            if right_label:
+                while c.stringWidth(display_title + '…', "Montserrat-Regular", h*0.5) + c.stringWidth(right_label, "Montserrat-Regular", h*0.3) + 4 > w:
+                    display_title = display_title[:-1]
+                if display_title != title:
+                    display_title = display_title.rstrip() + '…'
 
             if draw_text:
-                y_top = y  # this is the top of our 15-min block
+                y_top = y
                 c.setFillColor(black)
-                # title line
                 text_y = y_top - title_offset
                 c.setFont("Montserrat-Regular", fs_title)
-                c.drawString(x + 4, text_y, label)
-                # optional time line
-                if show_time:
-                    time_y = y_top - time_offset
+                c.drawString(x + 4, text_y, display_title)
+                if right_label:
+                    label_y = y_top - time_offset
                     c.setFont("Montserrat-Regular", fs_time)
-                    c.drawRightString(x + w - 4, time_y, tl)
+                    c.drawRightString(x + w - 4, label_y, right_label)
 
     now = datetime.now(tz_local)
     footer = settings.FOOTER
