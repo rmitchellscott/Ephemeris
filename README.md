@@ -257,6 +257,9 @@ DOC_ANTIALIAS=false
 | DOC_MINICAL_POSITION_OFFSET | 0                        | 5                       | Offset adjustment for mini-calendar positioning in points (1pt = 1/72in).            |
 | DOC_EVENT_FILL_COLOR        | gray14                   | black, gray0, #000000   | Color for the background of events. CSS names, Ephemeris gray names, and hex supported. |
 | DOC_EVENT_BORDER_COLOR      | gray(20%)                | black, gray0, #000000   | Color for the outline of events. CSS names, Ephemeris gray names, and hex supported. |
+| DOC_SHOW_TIME               | true                     | true, false             | Show event time labels.                                                              |
+| DOC_SHOW_LOCATION           | false                    | true, false             | Show event location labels.                                                          |
+| DOC_FIRST_LINE              | time                     | time, location          | Which label to show on the first line next to the title (the other appears on line 2 if there's room). |
 | DOC_FOOTER_TEXT             | E P H E M E R I S        | updatedat, disabled, My Cool Footer | Set to `updatedat` to print the "Updated at" timestamp, `disabled` to disable, or any text you want. |
 | DOC_MONOCHROME              | false                    | true, false               | Set to `true` to render the document in monochrome, disabling anti-aliasing.       |
 | DOC_ANTIALIAS               | true                    | true, false               | Set to `false` to disable anti-aliasing.                                            |
