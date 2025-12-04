@@ -1,7 +1,7 @@
 
 ARG RMAPI_VERSION=0.0.32
 
-FROM python:3.13-alpine AS ephemeris
+FROM python:3.14-alpine AS ephemeris
 
 RUN apk add --no-cache \
       freetype libjpeg-turbo libpng poppler-utils
