@@ -1030,37 +1030,43 @@ def render_schedule_pdf(
                 has_time = not (st.time() == time.min and en.time() == time.min)
                 time_label = meta.get('time_label', f"{fmt_time(st)}–{fmt_time(en)}") if (has_time and settings.SHOW_TIME) else ''
                 location_label = meta.get('location', '') if settings.SHOW_LOCATION else ''
+                original_location = location_label
                 time_first = settings.FIRST_LINE != 'location'
+
+                # Title truncation reserves space for time_label only (location should never shrink title)
+                time_label_w = c.stringWidth(time_label, "Montserrat-Regular", time_fs) if time_label else 0
+                max_title_w = inner_w - time_label_w - text_padding if time_label else inner_w
+
+                while txt and c.stringWidth(txt + "...", "Montserrat-Regular", title_fs) > max_title_w:
+                    txt = txt[:-1]
+                if txt != title:
+                    txt = txt.rstrip() + "..."
+
+                # Calculate remaining space for location (after title)
+                title_actual_w = c.stringWidth(txt, "Montserrat-Regular", title_fs)
+                avail_for_location = inner_w - title_actual_w - text_padding
+
+                # Truncate location to fit remaining space
+                if location_label:
+                    while location_label and c.stringWidth(location_label + "...", "Montserrat-Regular", time_fs) > avail_for_location:
+                        location_label = location_label[:-1]
+                    if location_label != original_location:
+                        location_label = location_label.rstrip() + "..."
 
                 if time_first:
                     right_label = time_label if time_label else location_label
                 else:
                     right_label = location_label if location_label else time_label
 
-                if right_label:
-                    while c.stringWidth(txt + "...", "Montserrat-Regular", title_fs) + c.stringWidth(right_label, "Montserrat-Regular", time_fs) + text_padding > inner_w:
-                        txt = txt[:-1]
-                    if txt != title:
-                        txt = txt.rstrip() + "..."
+                if draw_text:
+                    text_y = y + h - title_baseline
+                    c.setFillGray(0)
+                    c.drawString(x + bar_w + 2, text_y, txt)
 
-                    if draw_text:
-                        text_y = y + h - title_baseline
+                    if right_label:
                         label_y = y + h - time_baseline
-                        c.setFillGray(0)
-                        c.drawString(x + bar_w + 2, text_y, txt)
-
                         c.setFont("Montserrat-Regular", time_fs)
                         c.drawRightString(x + w - text_padding, label_y, right_label)
-                else:
-                    while c.stringWidth(txt + "...", "Montserrat-Regular", title_fs) > inner_w:
-                        txt = txt[:-1]
-                    if txt != title:
-                        txt = txt.rstrip() + "..."
-
-                    if draw_text:
-                        text_y = y + h - title_baseline
-                        c.setFillGray(0)
-                        c.drawString(x + bar_w + 2, text_y, txt)
 
     if all_day_in_grid and all_day_events:
         # slot_h = layout["hour_height"] * 0.25
@@ -1102,19 +1108,38 @@ def render_schedule_pdf(
             has_time = not (st.time() == time.min and en.time() == time.min)
             time_label = f"{fmt_time(st)}–{fmt_time(en)}" if (has_time and settings.SHOW_TIME) else ''
             location_label = meta.get('location', '') if settings.SHOW_LOCATION else ''
+            original_location = location_label
             time_first = settings.FIRST_LINE != 'location'
+
+            title_fs = h * 0.5
+            time_fs = h * 0.3
+            inner_w = w - 8
+
+            # Title truncation reserves space for time_label only (location should never shrink title)
+            time_label_w = c.stringWidth(time_label, "Montserrat-Regular", time_fs) if time_label else 0
+            max_title_w = inner_w - time_label_w - 4 if time_label else inner_w
+
+            display_title = title
+            while display_title and c.stringWidth(display_title + '…', "Montserrat-Regular", title_fs) > max_title_w:
+                display_title = display_title[:-1]
+            if display_title != title:
+                display_title = display_title.rstrip() + '…'
+
+            # Calculate remaining space for location (after title)
+            title_actual_w = c.stringWidth(display_title, "Montserrat-Regular", title_fs)
+            avail_for_location = inner_w - title_actual_w - 4
+
+            # Truncate location to fit remaining space
+            if location_label:
+                while location_label and c.stringWidth(location_label + "...", "Montserrat-Regular", time_fs) > avail_for_location:
+                    location_label = location_label[:-1]
+                if location_label != original_location:
+                    location_label = location_label.rstrip() + "..."
 
             if time_first:
                 right_label = time_label if time_label else location_label
             else:
                 right_label = location_label if location_label else time_label
-
-            display_title = title
-            if right_label:
-                while c.stringWidth(display_title + '…', "Montserrat-Regular", h*0.5) + c.stringWidth(right_label, "Montserrat-Regular", h*0.3) + 4 > w:
-                    display_title = display_title[:-1]
-                if display_title != title:
-                    display_title = display_title.rstrip() + '…'
 
             if draw_text:
                 y_top = y
