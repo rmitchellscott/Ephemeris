@@ -46,6 +46,7 @@ async def main():
     out_pdf = settings.OUTPUT_PDF
     os.makedirs(os.path.dirname(out_pdf), exist_ok=True)
     c = canvas.Canvas(out_pdf, pagesize=get_page_size())
+    c.setAuthor("Ephemeris")
     if settings.SEPARATE_TEXT:
         bg_pdf = out_pdf.replace('.pdf', '_bg.pdf')
         text_pdf = out_pdf.replace('.pdf', '_text.pdf')
