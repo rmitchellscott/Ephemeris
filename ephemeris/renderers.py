@@ -1,6 +1,6 @@
 from io import BytesIO
 import os
-from datetime import datetime, time, tzinfo
+from datetime import datetime, time, timedelta, tzinfo
 import calendar
 from tempfile import NamedTemporaryFile
 from loguru import logger
@@ -781,6 +781,23 @@ def render_schedule_pdf(
                     avail = other_x - title_x_start - 2
                     max_w_occ = min(max_w_occ, avail)
 
+            def get_occlusion_width(min_minutes, max_minutes):
+                result = max_w_time
+                window_start = start_eff + timedelta(minutes=min_minutes)
+                window_end = start_eff + timedelta(minutes=max_minutes)
+                for other in events:
+                    if other["layer_index"] <= event["layer_index"]:
+                        continue
+                    if other["start"] < window_end and other["end"] > window_start:
+                        other_w = total_width * other["width_frac"]
+                        other_x = layout["grid_right"] - other_w
+                        avail = other_x - title_x_start - 2
+                        result = min(result, avail)
+                return max(0, result)
+
+            max_w_occ_line2 = get_occlusion_width(30, 60)
+            max_w_occ_line3 = get_occlusion_width(75, 105)
+
             final_max_w = max(0, min(max_w_time, max_w_occ))
             display_title = title
             if c.stringWidth(display_title, "Montserrat-Regular", title_font_size) > final_max_w:
@@ -872,17 +889,16 @@ def render_schedule_pdf(
                 y_title = y_start - title_y_offset
                 y_line2 = y_title - (text_padding / 2) - time_y_offset
                 x_moved = box_x + 2 + text_padding
-                max_label_w = max(0, max_w_occ)
                 if time_first:
                     c.drawString(x_moved, y_line2, time_label)
                     if show_location_moved:
                         y_line3 = y_line2 - (text_padding / 2) - time_y_offset
                         if y_line3 >= layout["grid_bottom"]:
-                            display_location = truncate_location(location_label, max_label_w)
+                            display_location = truncate_location(location_label, max_w_occ_line3)
                             c.drawString(x_moved, y_line3, display_location)
                 else:
                     if location_label:
-                        display_location = truncate_location(location_label, max_label_w)
+                        display_location = truncate_location(location_label, max_w_occ_line2)
                         if display_location:
                             c.drawString(x_moved, y_line2, display_location)
                         if show_location_moved:
@@ -906,8 +922,7 @@ def render_schedule_pdf(
                         y_line2 = y_title - (text_padding / 2) - time_y_offset
                         if y_line2 >= layout["grid_bottom"]:
                             x_location = box_x + 2 + text_padding
-                            max_location_w = max(0, max_w_occ)
-                            display_location = truncate_location(location_label, max_location_w)
+                            display_location = truncate_location(location_label, max_w_occ_line2)
                             c.drawString(x_location, y_line2, display_location)
                 else:
                     if location_label:
