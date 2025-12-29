@@ -121,7 +121,7 @@ docker build -t ephemeris-rmapi .
 Install dependencies with:
 
 ```bash
-pip install requirements.txt
+pip install -r requirements.txt
 ```
 
 Run the script:
