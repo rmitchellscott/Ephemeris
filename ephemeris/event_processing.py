@@ -8,6 +8,31 @@ from icalendar import vRecur
 import ephemeris.settings as settings
 from ephemeris.utils import fmt_time
 
+
+def get_user_partstat(comp) -> str | None:
+    """
+    Extract the current user's participation status from ATTENDEE properties.
+    Returns PARTSTAT value (e.g., 'ACCEPTED', 'DECLINED', 'TENTATIVE', 'NEEDS-ACTION')
+    or None if user not found or no ATTENDEE properties.
+    """
+    if not settings.FILTER_DECLINED_EMAILS:
+        return None
+
+    attendees = comp.get('ATTENDEE')
+    if not attendees:
+        return None
+
+    if not isinstance(attendees, list):
+        attendees = [attendees]
+
+    for attendee in attendees:
+        attendee_str = str(attendee).lower()
+        for email in settings.FILTER_DECLINED_EMAILS:
+            if email in attendee_str:
+                return attendee.params.get('PARTSTAT', 'NEEDS-ACTION')
+
+    return None
+
 def _get_raw_end(comp):
     """
     Return a datetime for the event’s end:
@@ -137,6 +162,7 @@ def expand_event_for_day(
     """
     instances = []
     uid = comp.get('UID')
+    partstat = get_user_partstat(comp)
 
     # Decode raw DTSTART and inline‐fallback DTEND/duration (so normalize() always has something)
     start_raw = comp.decoded('dtstart')
@@ -212,7 +238,7 @@ def expand_event_for_day(
                 # Convert to local‐midnight
                 st = occ.astimezone(tz_local).replace(hour=0, minute=0, second=0, microsecond=0)
                 en = st + timedelta(days=1)
-                meta = {'uid': uid, 'calendar_color': color, 'all_day': True, 'location': str(comp.get('LOCATION', ''))}
+                meta = {'uid': uid, 'calendar_color': color, 'all_day': True, 'location': str(comp.get('LOCATION', '')), 'partstat': partstat}
                 instances.append((st, en, str(comp.get('SUMMARY','')), meta))
             return instances
 
@@ -220,7 +246,7 @@ def expand_event_for_day(
         if start_raw <= target_date < dtend_date:
             st = sod
             en = sod_next
-            meta = {'uid': uid, 'calendar_color': color, 'all_day': True, 'location': str(comp.get('LOCATION', ''))}
+            meta = {'uid': uid, 'calendar_color': color, 'all_day': True, 'location': str(comp.get('LOCATION', '')), 'partstat': partstat}
             return [(st, en, str(comp.get('SUMMARY','')), meta)]
         return []
 
@@ -277,7 +303,7 @@ def expand_event_for_day(
                 continue
             st = occ.astimezone(tz_local)
             en = (occ + (end0 - start)).astimezone(tz_local)
-            meta = {'uid': uid, 'calendar_color': color, 'all_day': False, 'location': str(comp.get('LOCATION', ''))}
+            meta = {'uid': uid, 'calendar_color': color, 'all_day': False, 'location': str(comp.get('LOCATION', '')), 'partstat': partstat}
             instances.append((st, en, str(comp.get('SUMMARY','')), meta))
 
     else:
@@ -297,19 +323,19 @@ def expand_event_for_day(
                     # First day: show actual start time to end of day
                     event_start = start
                     event_end = end if end.date() == target_date else sod_next
-                    meta = {'uid': uid, 'calendar_color': color, 'all_day': False, 'location': str(comp.get('LOCATION', ''))}
+                    meta = {'uid': uid, 'calendar_color': color, 'all_day': False, 'location': str(comp.get('LOCATION', '')), 'partstat': partstat}
                     instances.append((event_start, event_end, str(comp.get('SUMMARY','')), meta))
                 elif is_last_day:
                     # Last day: show start of day to actual end time
                     event_start = sod
                     event_end = end
-                    meta = {'uid': uid, 'calendar_color': color, 'all_day': False, 'location': str(comp.get('LOCATION', ''))}
+                    meta = {'uid': uid, 'calendar_color': color, 'all_day': False, 'location': str(comp.get('LOCATION', '')), 'partstat': partstat}
                     instances.append((event_start, event_end, str(comp.get('SUMMARY','')), meta))
                 elif is_middle_day:
                     # Middle day: convert to all-day event
                     event_start = sod
                     event_end = sod_next
-                    meta = {'uid': uid, 'calendar_color': color, 'all_day': True, 'location': str(comp.get('LOCATION', ''))}
+                    meta = {'uid': uid, 'calendar_color': color, 'all_day': True, 'location': str(comp.get('LOCATION', '')), 'partstat': partstat}
                     instances.append((event_start, event_end, str(comp.get('SUMMARY','')), meta))
 
     grid_start = sod.replace(hour=settings.START_HOUR)
@@ -370,6 +396,9 @@ def filter_events_for_day(events: list[tuple], target_date: date) -> list[tuple]
         status = meta.get('status','').lower()
         if any(v in tl for v in filter_list) or status in filter_list:
             logger.opt(colors=True).log("EVENTS","<yellow>Dropped (filter list):</yellow> '{}'.",title)
+            continue
+        if meta.get('partstat') == 'DECLINED':
+            logger.opt(colors=True).log("EVENTS","<yellow>Dropped (declined):</yellow> '{}'.",title)
             continue
         duration = (en - st).total_seconds() / 60
         if duration < 15:
