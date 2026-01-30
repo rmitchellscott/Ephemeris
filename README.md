@@ -230,7 +230,8 @@ DOC_ANTIALIAS=false
 | APP_OUTPUT_BG_PNG_DIR | output/png_background    | reports/bg_images       | Directory for background-only PNG files when DOC_SEPARATE_TEXT is enabled. |
 | APP_OUTPUT_TEXT_PNG_DIR | output/png_text          | reports/text_images     | Directory for text-only PNG files when DOC_SEPARATE_TEXT is enabled. |
 | APP_FORCE_REFRESH   | false                    | true, false            | Skip the changed events check and always render a document for each run. |
-| APP_FILTER_LIST     | cancelled,canceled       | canceled,removed       | Comma-separated list of substrings which, if found in an event’s title or status, will drop that event. |
+| APP_FILTER_LIST     | cancelled,canceled       | canceled,removed       | Comma-separated list of substrings which, if found in an event's title or status, will drop that event. |
+| APP_FILTER_DECLINED_EMAILS | (not set)           | user@example.com,alias@example.com | Comma-separated list of email addresses. Events where any of these addresses have declined the invitation will be excluded from the schedule. |
 | APP_POST_HOOK       | (not set)                | rsync output/ user@server:/path/ | Command to execute after successful document generation. |
 | APP_LOG_LEVEL       | INFO                     | VISUAL, EVENTS, DEBUG, INFO, WARNING   | Minimum log level to output to console. EVENTS is useful for troubleshooting why events are appearing or not. VISUAL shows detailed drawing information for developer debugging.                         |
 | APP_LOG_COLORIZE    | true                     | true, false            | Whether to use ANSI colors in console log output.                   |

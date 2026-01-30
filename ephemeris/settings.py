@@ -126,6 +126,8 @@ _raw_blocked_words = os.getenv("APP_FILTER_LIST", "cancelled,canceled")
 FILTER_BLOCKED_WORDS = tuple(w.strip().lower() for w in _raw_blocked_words.split(","))
 FORCE_REFRESH = os.getenv("APP_FORCE_REFRESH", "false").lower() in ("1", "true", "yes")
 POST_HOOK = os.getenv("APP_POST_HOOK")
+_raw_filter_declined_emails = os.getenv("APP_FILTER_DECLINED_EMAILS", "")
+FILTER_DECLINED_EMAILS = tuple(e.strip().lower() for e in _raw_filter_declined_emails.split(",") if e.strip())
 
 # Cover
 COVER_WIDTH_FRAC = float(os.getenv("DOC_COVER_WIDTH_SCALE", 0.75))
