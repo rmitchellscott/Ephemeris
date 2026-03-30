@@ -1,5 +1,5 @@
 aiohttp==3.13.2
-CairoSVG==2.8.2
+CairoSVG==2.9.0
 icalendar==6.3.2
 loguru==0.7.3
 pypdf==6.4.0
