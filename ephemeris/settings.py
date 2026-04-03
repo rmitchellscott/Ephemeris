@@ -61,6 +61,7 @@ OUTPUT_PDF   = os.getenv("APP_OUTPUT_PDF_PATH", "output/ephemeris.pdf")
 OUTPUT_PNG   = os.getenv("APP_OUTPUT_PNG_DIR", "output/png")
 OUTPUT_PNG_BG   = os.getenv("APP_OUTPUT_BG_PNG_DIR", "output/png_background")
 OUTPUT_PNG_TEXT = os.getenv("APP_OUTPUT_TEXT_PNG_DIR", "output/png_text")
+OUTPUT_SVG   = os.getenv("APP_OUTPUT_SVG_DIR", "output/svg")
 SEPARATE_TEXT   = os.getenv("DOC_SEPARATE_TEXT", "false").lower() in ("1", "true", "yes")
 DEFAULT_COVER = os.getenv("DOC_COVER_SVG_PATH", str(BASE_DIR / "assets/cover.svg"))
 FONTS_DIR = BASE_DIR / "fonts"

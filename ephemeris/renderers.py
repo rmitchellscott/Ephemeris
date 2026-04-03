@@ -1245,3 +1245,34 @@ def export_pdf_to_png(pdf_path: str,
         file.rename(new_name)
 
     return str(out_dir)
+
+
+def export_pdf_to_svg(pdf_path: str,
+                      date_list: list,
+                      cover: bool,
+                      output_dir: str = None):
+    base = Path(pdf_path).with_suffix('')
+    out_dir = Path(output_dir or f"{base}_svg")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    logger.info("Rendering SVGs...")
+
+    total_pages = len(date_list) + (1 if cover else 0)
+
+    for page_num in range(1, total_pages + 1):
+        if cover and page_num == 1:
+            out_file = out_dir / "cover.svg"
+        else:
+            date = date_list[page_num - (2 if cover else 1)]
+            out_file = out_dir / f"ephemeris_{date.isoformat()}.svg"
+
+        args = [
+            "pdftocairo",
+            "-svg",
+            "-f", str(page_num),
+            "-l", str(page_num),
+            str(pdf_path),
+            str(out_file),
+        ]
+        subprocess.run(args, check=True)
+
+    return str(out_dir)

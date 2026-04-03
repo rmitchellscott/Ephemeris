@@ -224,9 +224,10 @@ DOC_ANTIALIAS=false
 |:--------------------|:--------------------------|:----------------------|:--------------------------------------------------------------------|
 | APP_CONFIG_PATH     | {BASE_DIR}/config.yaml   | /path/to/config.yaml   | Path to the configuration file.                                     |
 | APP_META_FILE_PATH  | {BASE_DIR}/feeds_meta.yaml| /path/to/meta.yaml    | Path to the feeds metadata file.                                    |
-| APP_OUTPUT_FORMAT   | pdf                      | pdf, png, both         | Output format for the generated schedule.                           |
+| APP_OUTPUT_FORMAT   | pdf                      | pdf, png, svg, both, all | Output format. `both` = PDF + PNG, `all` = PDF + PNG + SVG.        |
 | APP_OUTPUT_PDF_PATH | output/ephemeris.pdf     | reports/schedule.pdf   | Path and name for rendered output file.                             |
 | APP_OUTPUT_PNG_DIR  | output/png               | reports/images         | Directory for rendered output PNG files, one per day.               |
+| APP_OUTPUT_SVG_DIR  | output/svg               | reports/svg            | Directory for rendered output SVG files, one per day.               |
 | APP_OUTPUT_BG_PNG_DIR | output/png_background    | reports/bg_images       | Directory for background-only PNG files when DOC_SEPARATE_TEXT is enabled. |
 | APP_OUTPUT_TEXT_PNG_DIR | output/png_text          | reports/text_images     | Directory for text-only PNG files when DOC_SEPARATE_TEXT is enabled. |
 | APP_FORCE_REFRESH   | false                    | true, false            | Skip the changed events check and always render a document for each run. |
