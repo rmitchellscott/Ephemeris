@@ -23,7 +23,7 @@ from ephemeris.event_processing import (
 )
 from ephemeris.layout import get_page_size
 from ephemeris.utils import parse_date_range
-from ephemeris.renderers import render_cover, render_schedule_pdf, export_pdf_to_png
+from ephemeris.renderers import render_cover, render_schedule_pdf, export_pdf_to_png, export_pdf_to_svg
 from ephemeris.logger import configure_logging
 
 
@@ -192,7 +192,7 @@ async def main():
         c_text.save()
     logger.info("Wrote PDF to {}", out_pdf)
     
-    if settings.FORMAT in ('png', 'both'):
+    if settings.FORMAT in ('png', 'both', 'all'):
         png_dir = export_pdf_to_png(
             pdf_path=out_pdf,
             date_list=date_list,
@@ -206,21 +206,36 @@ async def main():
             export_pdf_to_png(
                 pdf_path=bg_pdf,
                 date_list=date_list,
-                cover=False,  # Separate PDFs don't include cover page
+                cover=False,
                 output_dir=settings.OUTPUT_PNG_BG,
                 dpi=settings.PDF_DPI,
             )
             export_pdf_to_png(
                 pdf_path=text_pdf,
                 date_list=date_list,
-                cover=False,  # Separate PDFs don't include cover page
+                cover=False,
                 output_dir=settings.OUTPUT_PNG_TEXT,
                 dpi=settings.PDF_DPI,
                 transparent=True,
             )
-        
-        # If the user only wants PNGs, remove the PDF:
+
         if settings.FORMAT == 'png':
+            os.remove(out_pdf)
+            logger.info("Removed merged PDF at {}", out_pdf)
+            if settings.SEPARATE_TEXT:
+                os.remove(bg_pdf)
+                os.remove(text_pdf)
+
+    if settings.FORMAT in ('svg', 'all'):
+        svg_dir = export_pdf_to_svg(
+            pdf_path=out_pdf,
+            date_list=date_list,
+            cover=settings.COVER_PAGE,
+            output_dir=settings.OUTPUT_SVG,
+        )
+        logger.info("Exported SVGs to {}", svg_dir)
+
+        if settings.FORMAT == 'svg':
             os.remove(out_pdf)
             logger.info("Removed merged PDF at {}", out_pdf)
             if settings.SEPARATE_TEXT:
