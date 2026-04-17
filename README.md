@@ -277,8 +277,9 @@ DOC_ANTIALIAS=false
 | DOC_SEPARATE_TEXT           | false                    | true, false         | When true, Ephemeris creates text-only and background-only PNG files. |
 
 ## License
+Copyright (C) 2025 Mitchell Scott
 
-MIT
+Licensed under the GNU General Public License v3.0.
 
 ---
 
