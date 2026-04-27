@@ -2,7 +2,7 @@ aiohttp==3.13.4
 CairoSVG==2.9.0
 icalendar==6.3.2
 loguru==0.7.3
-pypdf==6.9.2
+pypdf==6.10.2
 pytz==2025.2
 PyYAML==6.0.3
 reportlab==4.4.10
