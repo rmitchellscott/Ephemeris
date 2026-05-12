@@ -4,8 +4,8 @@
 [![rm1](https://img.shields.io/badge/rM1-supported-green)](https://remarkable.com/store/remarkable)
 [![rm2](https://img.shields.io/badge/rM2-supported-green)](https://remarkable.com/store/remarkable-2)
 [![rmpp](https://img.shields.io/badge/rMPP-supported-green)](https://remarkable.com/store/overview/remarkable-paper-pro)
-[![rmppm](https://img.shields.io/badge/rMPPM-supported-green)](https://remarkable.com/products/remarkable-paper/pro-move)
-> Your daily path through time.
+[![rmppmove](https://img.shields.io/badge/rMPPMove-supported-green)](https://remarkable.com/products/remarkable-paper/pro-move)
+[![rmppure](https://img.shields.io/badge/rMPPure-supported-green)](https://remarkable.com/products/remarkable-paper/pure)
 
 
 Ephemeris is a Python-based tool that generates clean, daily schedules using ICS calendar data. Designed with e-ink tablets like reMarkable and Kindle Scribe in mind.
@@ -134,12 +134,7 @@ For guidence on sending to your device, see the [project's wiki](https://github.
 
 ## Common Device Parameters
 
-#### reMarkable 1
-```shell
-DOC_PAGE_DIMENSIONS=1404x1872
-DOC_PAGE_DPI=226
-```
-#### reMarkable 2
+#### reMarkable 1 / 2 / Paper Pure
 ```shell
 DOC_PAGE_DIMENSIONS=1404x1872
 DOC_PAGE_DPI=226
