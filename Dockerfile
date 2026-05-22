@@ -1,5 +1,5 @@
 
-ARG RMAPI_VERSION=0.0.32
+ARG RMAPI_VERSION=0.0.34
 
 FROM python:3.14-alpine AS ephemeris
 
