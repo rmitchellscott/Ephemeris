@@ -94,7 +94,7 @@ jobs:
             type=sha,suffix=-rmapi${{ env.RMAPI_VERSION }},priority=100,enable=${{ matrix.variant == 'rmapi' }}
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
 
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v4
