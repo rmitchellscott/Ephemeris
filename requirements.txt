@@ -1,6 +1,6 @@
 aiohttp==3.13.4
 CairoSVG==2.9.0
-icalendar==6.3.2
+icalendar==7.2.2
 loguru==0.7.3
 pypdf==6.10.2
 pytz==2025.2
