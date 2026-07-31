@@ -115,8 +115,8 @@ docker build -t ephemeris-rmapi .
 ### Python
 #### Setup
 
-- Python 3.8+
-- Dependencies: `cairosvg`, `icalendar`, `loguru`, `pypdf`, `pytz`, `pyyaml`, `reportlab`, `requests`, `webcolors`
+- Python 3.10+
+- Dependencies: `aiohttp`, `cairosvg`, `icalendar`, `loguru`, `pytz`, `pyyaml`, `reportlab`, `requests`, `webcolors`
 
 Install dependencies with:
 

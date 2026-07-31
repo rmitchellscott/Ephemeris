@@ -1,7 +1,7 @@
+aiohttp
 cairosvg
 icalendar
 loguru
-pypdf
 pytz
 pyyaml
 reportlab
